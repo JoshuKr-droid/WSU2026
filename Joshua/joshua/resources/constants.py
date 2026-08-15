@@ -3,3 +3,4 @@
 namespace = "WebHealth"
 metricAvailability = "AVAILABILITY_METRIC"
 metricLatency = "LATENCY_METRIC"
+metricStatusCode = "HTTP_STATUS_CODE"

@@ -14,7 +14,7 @@ def putDataFunc(namespace, metricName, url, value, unit):
                     {
                         'Name': 'URL',
                         'Value': url
-                    },
+                    }
                 ],
                 'Unit': unit,
                 'Value': float(value)
