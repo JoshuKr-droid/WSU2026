@@ -15,6 +15,7 @@ def lambda_handler(event, context):
     ]
 
 # https://docs.aws.amazon.com/boto3/latest/reference/services/cloudwatch/client/list_metrics.html
+# https://docs.aws.amazon.com/boto3/latest/guide/cw-example-metrics.html
     client = boto3.client('cloudwatch')
 
     for site_url in websites:

@@ -5,6 +5,7 @@ from aws_cdk import (
     Duration,
     RemovalPolicy,
     Stack,
+    aws_cloudwatch as cloudwatch,
     aws_events as events,
     aws_events_targets as targets,
     aws_lambda as lambda_,
@@ -50,3 +51,37 @@ class JoshuaStack(Stack):
         rule.add_target(targets.LambdaFunction(fn))
         # Destruction policy for the rule. If the stack is deleted, the rule will be deleted as well.
         rule.apply_removal_policy(RemovalPolicy.DESTROY)
+
+        # CloudWatch dashboard for website health monitoring
+        dashboard = cloudwatch.Dashboard(
+            self,
+            "WebHealthDashboard",
+            dashboard_name="WebHealthMonitoring",
+        )
+
+        dashboard.add_widgets(
+            cloudwatch.GraphWidget(
+                title="Website Availability",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="WebHealth",
+                        metric_name="AVAILABILITY_METRIC",
+                        statistic="Average",
+                        period=Duration.minutes(5),
+                        dimensions_map={"URL": "https://www.westernsydney.edu.au/"},
+                    )
+                ],
+            ),
+            cloudwatch.GraphWidget(
+                title="Website Latency",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="WebHealth",
+                        metric_name="LATENCY_METRIC",
+                        statistic="Average",
+                        period=Duration.minutes(5),
+                        dimensions_map={"URL": "https://www.westernsydney.edu.au/"},
+                    )
+                ],
+            ),
+        )
