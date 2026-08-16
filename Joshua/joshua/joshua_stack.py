@@ -45,7 +45,7 @@ class JoshuaStack(Stack):
         rule = events.Rule(
             self,
             "LambdaInvocationRule",
-            schedule=events.Schedule.rate(Duration.minutes(2)),
+            schedule=events.Schedule.rate(Duration.minutes(5)),
         )
         # Tells to invoke the lambda function when the rule is triggered
         rule.add_target(targets.LambdaFunction(fn))

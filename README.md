@@ -51,6 +51,16 @@ The project focuses on:
 
 ---
 
+## Week 2
+
+- Create the lambda handler
+- Create first lambda
+
+# Week 3
+
+- Create metrics for the website
+- Create a CloudWatch Dashboard and have graphs for each metric
+
 
 
 # Overall Expected Learning Outcomes
