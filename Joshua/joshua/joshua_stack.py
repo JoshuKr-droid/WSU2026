@@ -45,7 +45,7 @@ class JoshuaStack(Stack):
         rule = events.Rule(
             self,
             "LambdaInvocationRule",
-            schedule=events.Schedule.rate(Duration.minutes(30)),
+            schedule=events.Schedule.rate(Duration.minutes(2)),
         )
         # Tells to invoke the lambda function when the rule is triggered
         rule.add_target(targets.LambdaFunction(fn))
@@ -59,7 +59,9 @@ class JoshuaStack(Stack):
             dashboard_name="WebHealthMonitoring",
         )
 
+        #https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/README.html#dashboards
         dashboard.add_widgets(
+            # Creates a graph for availibility metric
             cloudwatch.GraphWidget(
                 title="Website Availability",
                 left=[
@@ -72,12 +74,26 @@ class JoshuaStack(Stack):
                     )
                 ],
             ),
+            # Creates a graph for latency metric
             cloudwatch.GraphWidget(
                 title="Website Latency",
                 left=[
                     cloudwatch.Metric(
                         namespace="WebHealth",
                         metric_name="LATENCY_METRIC",
+                        statistic="Average",
+                        period=Duration.minutes(5),
+                        dimensions_map={"URL": "https://www.westernsydney.edu.au/"},
+                    )
+                ],
+            ),
+            # Creates a graph for Http status codes metric
+            cloudwatch.GraphWidget(
+                title="HTTP Status Codes",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="WebHealth",
+                        metric_name="HTTP_STATUS_CODE",
                         statistic="Average",
                         period=Duration.minutes(5),
                         dimensions_map={"URL": "https://www.westernsydney.edu.au/"},
