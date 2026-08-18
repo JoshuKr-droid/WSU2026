@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_cloudwatch as cloudwatch,
     aws_events as events,
     aws_events_targets as targets,
+    aws_iam as iam,
     aws_lambda as lambda_,
 )
 from constructs import Construct
@@ -40,6 +41,14 @@ class JoshuaStack(Stack):
         )
         # Destruction policy for the lambda function. If the stack is deleted, the lambda function will be deleted as well.
         fn.apply_removal_policy(RemovalPolicy.DESTROY)
+
+    
+        fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cloudwatch:PutMetricData"],
+                resources=["*"],
+            )
+        )
 
         # Invokes lambda function every x minutes
         rule = events.Rule(
