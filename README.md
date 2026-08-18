@@ -32,6 +32,9 @@ The project focuses on:
 
 ---
 
+Student ID: 22195904
+Student Name: Joshua Kramel
+
 # Weekly Project Plan
 
 ## Week 1 – Project Setup
@@ -60,6 +63,9 @@ The project focuses on:
 
 - Create metrics for the website
 - Create a CloudWatch Dashboard and have graphs for each metric
+
+
+To run the application, enter 'cdk deploy' in the terminal. Currently the application runs invocations every 5 minutes, and creates cloudwatch dashboards for each metric.
 
 
 
