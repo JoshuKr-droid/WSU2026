@@ -14,15 +14,32 @@ def test_lambda_and_schedule_created():
     # Gives you access to the synthesized CloudFormation template
     template = assertions.Template.from_stack(stack)
 
-    # Expects cloudformation template to have 1 Lambda function and 1 EventBridge rule
+    # Expects cloudformation template to have 1 Lambda function, 1 EventBridge rule, and 2 alarms
     template.resource_count_is("AWS::Lambda::Function", 1)
     template.resource_count_is("AWS::Events::Rule", 1)
+    template.resource_count_is("AWS::CloudWatch::Alarm", 2)
 
     # Finds the Lambda resource and make sure its Handler property is webhealth.lambda_handler."
     template.has_resource_properties(
         "AWS::Lambda::Function",
         {
             "Handler": "webhealth.lambda_handler",
+        },
+    )
+
+    template.has_resource_properties(
+        "AWS::CloudWatch::Alarm",
+        {
+            "ComparisonOperator": "LessThanThreshold",
+            "Threshold": 0.9,
+        },
+    )
+
+    template.has_resource_properties(
+        "AWS::CloudWatch::Alarm",
+        {
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Threshold": 2,
         },
     )
 
