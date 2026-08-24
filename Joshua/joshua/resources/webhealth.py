@@ -76,7 +76,7 @@ def lambda_handler(event, context):
                 }
             ]
         )
-
+        # Http status code metric is a count of the number of occurrences of each status code. The unit for this metric is "Count".
         response3 = client.put_metric_data(
             Namespace=constants.namespace,
             MetricData=[
@@ -94,11 +94,12 @@ def lambda_handler(event, context):
                 }
             ]
         )
-
+        # Calls the putDataFunc function from CWPutData.py to send the metrics to CloudWatch. This is a more modular approach, as it allows for easier testing and maintenance of the code.
         cw.putDataFunc(constants.namespace, constants.metricAvailability, site_url, availability, 'None')
         cw.putDataFunc(constants.namespace, constants.metricLatency, site_url, latency, 'Seconds')
         cw.putDataFunc(constants.namespace, constants.metricStatusCode, site_url, status_code, 'Count')
 
+    # Returns a response to indicate that the metrics have been published successfully. The response includes the last responses from the put_metric_data calls for availability, latency, and status code metrics.
     return {
         'statusCode': 200,
         'body': 'Metric publishing complete',

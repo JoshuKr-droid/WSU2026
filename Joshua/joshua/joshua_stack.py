@@ -87,7 +87,7 @@ class JoshuaStack(Stack):
         )
 
         # Creates an alarm for website availability metric. If the availability drops below 90%, the alarm will be triggered.
-        cloudwatch.Alarm(
+        availabilityAlarm = cloudwatch.Alarm(
             self,
             "WebsiteAvailabilityAlarm",
             alarm_name="WebsiteAvailabilityAlarm",
@@ -98,9 +98,10 @@ class JoshuaStack(Stack):
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site availability drops below 90%.",
         )
+        availabilityAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
 
         # Creates an alarm for website latency metric. If the latency exceeds 2 seconds, the alarm will be triggered.
-        cloudwatch.Alarm(
+        latencyAlarm = cloudwatch.Alarm(
             self,
             "WebsiteLatencyAlarm",
             alarm_name="WebsiteLatencyAlarm",
@@ -111,9 +112,10 @@ class JoshuaStack(Stack):
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site latency exceeds 2 seconds.",
         )
+        latencyAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
 
         # Create alarm for HTTP status codes (4xx and 5xx)
-        cloudwatch.Alarm(
+        httpStatusAlarm = cloudwatch.Alarm(
             self,
             "WebsiteHttpStatusAlarm",
             alarm_name="WebsiteHttpStatusAlarm",
@@ -124,6 +126,7 @@ class JoshuaStack(Stack):
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site returns 4xx or 5xx HTTP status codes.",
         )
+        httpStatusAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
 
         # CloudWatch dashboard for website health monitoring
         dashboard = cloudwatch.Dashboard(
