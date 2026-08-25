@@ -13,6 +13,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_sns as sns,
     aws_sns_subscriptions as subscriptions,
+    aws_dynamodb as dynamodb,
 )
 from constructs import Construct
 
@@ -52,6 +53,32 @@ class JoshuaStack(Stack):
                 resources=["*"],
             )
         )
+
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_dynamodb/Table.html
+        alarm_log_table = dynamodb.Table(
+            self,
+            "AlarmLogTable",
+            partition_key=dynamodb.Attribute(
+                name="alarm_name",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            sort_key=dynamodb.Attribute(
+                name="state_change_time",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+        alarm_logger = lambda_.Function(
+            self,
+            "AlarmLoggerLambda",
+            runtime=lambda_.Runtime.PYTHON_3_14,
+            handler="alarm_logger.lambda_handler",
+            code=lambda_.Code.from_asset("joshua/resources"),
+            environment={"ALARM_LOG_TABLE": alarm_log_table.table_name},
+        )
+        alarm_log_table.grant_write_data(alarm_logger)
 
         # Invokes lambda function every x minutes
         rule = events.Rule(
@@ -98,7 +125,7 @@ class JoshuaStack(Stack):
         topic.add_subscription(subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au"))
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/LambdaSubscription.html
         # When an alarm is triggered, the lambda function will be invoked. This can be used to perform any additional actions when an alarm is triggered.
-        topic.add_subscription(subscriptions.LambdaSubscription(fn))
+        topic.add_subscription(subscriptions.LambdaSubscription(alarm_logger))
         alarm_action = cloudwatch_actions.SnsAction(topic)
 
         # Creates an alarm for website availability metric. If the availability drops below 90%, the alarm will be triggered.
