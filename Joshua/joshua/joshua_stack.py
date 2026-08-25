@@ -6,6 +6,7 @@ from aws_cdk import (
     RemovalPolicy,
     Stack,
     aws_cloudwatch as cloudwatch,
+    aws_cloudwatch_actions as cloudwatch_actions,
     aws_events as events,
     aws_events_targets as targets,
     aws_iam as iam,
@@ -88,6 +89,18 @@ class JoshuaStack(Stack):
             dimensions_map={"URL": website_url},
         )
 
+        ## Notification service to notify ourselves of any significant change in our metric
+
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns/Topic.html        
+        topic = sns.Topic(self, "AlarmNotifications")
+        # When an alarm is triggered, an email will be sent to the specified email address.
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/EmailSubscription.html
+        topic.add_subscription(subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au"))
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/LambdaSubscription.html
+        # When an alarm is triggered, the lambda function will be invoked. This can be used to perform any additional actions when an alarm is triggered.
+        topic.add_subscription(subscriptions.LambdaSubscription(fn))
+        alarm_action = cloudwatch_actions.SnsAction(topic)
+
         # Creates an alarm for website availability metric. If the availability drops below 90%, the alarm will be triggered.
         availabilityAlarm = cloudwatch.Alarm(
             self,
@@ -102,7 +115,7 @@ class JoshuaStack(Stack):
         )
         availabilityAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
-        availabilityAlarm.add_alarm_action(topic)
+        availabilityAlarm.add_alarm_action(alarm_action)
 
         # Creates an alarm for website latency metric. If the latency exceeds 2 seconds, the alarm will be triggered.
         latencyAlarm = cloudwatch.Alarm(
@@ -117,7 +130,8 @@ class JoshuaStack(Stack):
             alarm_description="Alarm when the site latency exceeds 2 seconds.",
         )
         latencyAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
-        latencyAlarm.add_alarm_action(topic)
+        latencyAlarm.add_alarm_action(alarm_action)
+
         # Create alarm for HTTP status codes (4xx and 5xx)
         httpStatusAlarm = cloudwatch.Alarm(
             self,
@@ -131,7 +145,7 @@ class JoshuaStack(Stack):
             alarm_description="Alarm when the site returns 4xx or 5xx HTTP status codes.",
         )
         httpStatusAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
-        httpStatusAlarm.add_alarm_action(topic)
+        httpStatusAlarm.add_alarm_action(alarm_action)
 
         # CloudWatch dashboard for website health monitoring
         dashboard = cloudwatch.Dashboard(
@@ -159,18 +173,10 @@ class JoshuaStack(Stack):
             ),
         )
 
-        # Notification service to notify ourselves of any significant change in our metric
 
-
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/README.html
-        topic = sns.Topic(self, "AlarmNotifications")
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/EmailSubscription.html
-        topic.add_subscription(subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au"))
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/LambdaSubscription.html
-        topic.add_subscription(subscriptions.LambdaSubscription(fn))
         # I may have missed some info on topics/ alarm action / subscriptions. Though I'm not too sure.
 
         #Logging alarm information in DynamoDB databse
-        fn_Database = 
+        # fn_Database = 
 
         #Create dyanmoDB, but pass it into the lambda function so it can write into the database?
