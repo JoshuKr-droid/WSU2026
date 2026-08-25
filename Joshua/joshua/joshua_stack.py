@@ -84,7 +84,7 @@ class JoshuaStack(Stack):
         rule = events.Rule(
             self,
             "LambdaInvocationRule",
-            schedule=events.Schedule.rate(Duration.minutes(5)),
+            schedule=events.Schedule.rate(Duration.minutes(2)),
         )
         # Tells to invoke the lambda function when the rule is triggered
         rule.add_target(targets.LambdaFunction(fn))
@@ -204,6 +204,5 @@ class JoshuaStack(Stack):
         # I may have missed some info on topics/ alarm action / subscriptions. Though I'm not too sure.
 
         #Logging alarm information in DynamoDB databse
-        # fn_Database = 
 
         #Create dyanmoDB, but pass it into the lambda function so it can write into the database?
