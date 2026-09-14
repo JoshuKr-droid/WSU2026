@@ -70,6 +70,7 @@ class JoshuaStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
+        #This passes the DynamoDB table name into the Lambda through an environment variable.
         alarm_logger = lambda_.Function(
             self,
             "AlarmLoggerLambda",
@@ -78,6 +79,7 @@ class JoshuaStack(Stack):
             code=lambda_.Code.from_asset("joshua/resources"),
             environment={"ALARM_LOG_TABLE": alarm_log_table.table_name},
         )
+        #Gives your Lambda permission to write items into the table.
         alarm_log_table.grant_write_data(alarm_logger)
 
         # Invokes lambda function every x minutes

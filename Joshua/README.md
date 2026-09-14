@@ -89,7 +89,7 @@ This allows alarm activity to be retained for later analysis.
 
 ## CloudWatch Metrics
 
-The project uses a custom CloudWatch namespace named `WebHealth` and publishes metrics with the `URL` dimension so each site can be monitored separately.
+The project uses a custom CloudWatch namespace named `WebHealth`. The metrics use the `URL` dimension so measurements for each monitored site can be distinguished in CloudWatch.
 
 ### Metrics
 
@@ -260,7 +260,7 @@ cdk diff
 cdk deploy
 ```
 
-## Repository Structure
+## Repository Structure (I had A.I write this part because it would be annoying to do by hand)
 
 ```text
 .
