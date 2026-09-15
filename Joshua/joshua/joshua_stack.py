@@ -152,16 +152,16 @@ class JoshuaStack(Stack):
 
         ## Notification service to notify ourselves of any significant change in our metric
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns/Topic.html
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns.Topic.html
         topic = sns.Topic(self, "AlarmNotifications")
 
         # When an alarm is triggered, an email will be sent to the specified email address.
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/EmailSubscription.html
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions.EmailSubscription.html
         topic.add_subscription(
             subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au")
         )
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/LambdaSubscription.html
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions.LambdaSubscription.html
         # When an alarm is triggered, the lambda function will be invoked. This can be used to perform any additional actions when an alarm is triggered.
         topic.add_subscription(
             subscriptions.LambdaSubscription(alarm_logger)
@@ -169,58 +169,80 @@ class JoshuaStack(Stack):
 
         alarm_action = cloudwatch_actions.SnsAction(topic)
 
-        # Creates an alarm for website availability metric. If the availability drops below 90%, the alarm will be triggered.
-        availabilityAlarm = cloudwatch.Alarm(
-            self,
-            "WebsiteAvailabilityAlarm",
-            alarm_name="WebsiteAvailabilityAlarm",
-            metric=availability_metrics[0],
-            threshold=0.9,
-            evaluation_periods=2,
-            comparison_operator=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
-            treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
-            alarm_description="Alarm when the site availability drops below 90%.",
-        )
-
-        availabilityAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
-
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
-        availabilityAlarm.add_alarm_action(alarm_action)
+        # Creates alarms for each website.
+        # Each website has an availability, latency and HTTP status code alarm.
 
-        # Creates an alarm for website latency metric. If the latency exceeds 2 seconds, the alarm will be triggered.
-        latencyAlarm = cloudwatch.Alarm(
-            self,
-            "WebsiteLatencyAlarm",
-            alarm_name="WebsiteLatencyAlarm",
-            metric=latency_metrics[0],
-            threshold=2,
-            evaluation_periods=2,
-            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-            treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
-            alarm_description="Alarm when the site latency exceeds 2 seconds.",
-        )
+        for i, website_url in enumerate(website_urls):
 
-        latencyAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+            # Creates an alarm for website availability metric.
+            # If the availability drops below 90%, the alarm will be triggered.
+            availabilityAlarm = cloudwatch.Alarm(
+                self,
+                f"WebsiteAvailabilityAlarm{i}",
+                alarm_name=f"WebsiteAvailabilityAlarm-{i}",
+                metric=availability_metrics[i],
+                threshold=0.9,
+                evaluation_periods=2,
+                comparison_operator=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+                treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
+                alarm_description=f"Alarm when {website_url} availability drops below 90%.",
+            )
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
-        latencyAlarm.add_alarm_action(alarm_action)
+            # Destruction policy for the alarm.
+            # If the stack is deleted, the alarm will be deleted as well.
+            availabilityAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
 
-        # Create alarm for HTTP status codes (4xx and 5xx)
-        httpStatusAlarm = cloudwatch.Alarm(
-            self,
-            "WebsiteHttpStatusAlarm",
-            alarm_name="WebsiteHttpStatusAlarm",
-            metric=http_status_code_metrics[0],
-            threshold=400,
-            evaluation_periods=2,
-            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-            treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
-            alarm_description="Alarm when the site returns 4xx or 5xx HTTP status codes.",
-        )
+            # When the alarm is triggered, the SNS topic will be notified.
+            # This sends an email and invokes the alarm logger Lambda.
+            availabilityAlarm.add_alarm_action(alarm_action)
 
-        httpStatusAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
 
-        httpStatusAlarm.add_alarm_action(alarm_action)
+            # Creates an alarm for website latency metric.
+            # If the latency exceeds 2 seconds, the alarm will be triggered.
+            latencyAlarm = cloudwatch.Alarm(
+                self,
+                f"WebsiteLatencyAlarm{i}",
+                alarm_name=f"WebsiteLatencyAlarm-{i}",
+                metric=latency_metrics[i],
+                threshold=2,
+                evaluation_periods=2,
+                comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
+                alarm_description=f"Alarm when {website_url} latency exceeds 2 seconds.",
+            )
+
+            # Destruction policy for the alarm.
+            # If the stack is deleted, the alarm will be deleted as well.
+            latencyAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+
+            # When the alarm is triggered, the SNS topic will be notified.
+            # This sends an email and invokes the alarm logger Lambda.
+            latencyAlarm.add_alarm_action(alarm_action)
+
+
+            # Creates an alarm for HTTP status codes (4xx and 5xx).
+            # If the HTTP status code is greater than 400, the alarm will be triggered.
+            httpStatusAlarm = cloudwatch.Alarm(
+                self,
+                f"WebsiteHttpStatusAlarm{i}",
+                alarm_name=f"WebsiteHttpStatusAlarm-{i}",
+                metric=http_status_code_metrics[i],
+                threshold=400,
+                evaluation_periods=2,
+                comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
+                alarm_description=f"Alarm when {website_url} returns an HTTP status code greater than 400.",
+            )
+
+            # Destruction policy for the alarm.
+            # If the stack is deleted, the alarm will be deleted as well.
+            httpStatusAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+
+            # When the alarm is triggered, the SNS topic will be notified.
+            # This sends an email and invokes the alarm logger Lambda.
+            httpStatusAlarm.add_alarm_action(alarm_action)
+
 
         # CloudWatch dashboard for website health monitoring
         dashboard = cloudwatch.Dashboard(
