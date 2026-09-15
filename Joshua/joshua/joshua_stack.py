@@ -17,6 +17,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+
 class JoshuaStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -43,10 +44,12 @@ class JoshuaStack(Stack):
             # lambda runs for a max of 30 seconds before timing out
             timeout=Duration.seconds(30),
         )
+
         # Destruction policy for the lambda function. If the stack is deleted, the lambda function will be deleted as well.
         fn.apply_removal_policy(RemovalPolicy.DESTROY)
 
-        # Grants the lambda function permission to put metric data to CloudWatch (May be able to be put into the lambda function itself, but I don't know how to do that yet.)
+        # Grants the lambda function permission to put metric data to CloudWatch
+        # (May be able to be put into the lambda function itself, but I don't know how to do that yet.)
         fn.add_to_role_policy(
             iam.PolicyStatement(
                 actions=["cloudwatch:PutMetricData"],
@@ -70,7 +73,7 @@ class JoshuaStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
-        #This passes the DynamoDB table name into the Lambda through an environment variable.
+        # This passes the DynamoDB table name into the Lambda through an environment variable.
         alarm_logger = lambda_.Function(
             self,
             "AlarmLoggerLambda",
@@ -79,7 +82,8 @@ class JoshuaStack(Stack):
             code=lambda_.Code.from_asset("joshua/resources"),
             environment={"ALARM_LOG_TABLE": alarm_log_table.table_name},
         )
-        #Gives your Lambda permission to write items into the table.
+
+        # Gives your Lambda permission to write items into the table.
         alarm_log_table.grant_write_data(alarm_logger)
 
         # Invokes lambda function every x minutes
@@ -88,46 +92,81 @@ class JoshuaStack(Stack):
             "LambdaInvocationRule",
             schedule=events.Schedule.rate(Duration.minutes(2)),
         )
+
         # Tells to invoke the lambda function when the rule is triggered
         rule.add_target(targets.LambdaFunction(fn))
+
         # Destruction policy for the rule. If the stack is deleted, the rule will be deleted as well.
         rule.apply_removal_policy(RemovalPolicy.DESTROY)
 
-        website_url = "https://www.westernsydney.edu.au/"
+        # Websites being monitored.
+        # These URLs must match the URLs used in webhealth.py.
+        website_urls = [
+            "https://www.westernsydney.edu.au/",
+            "https://www.unsw.edu.au/",
+            "https://www.sydney.edu.au/",
+        ]
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
-        availability_metric = cloudwatch.Metric(
-            namespace="WebHealth",
-            metric_name="AVAILABILITY_METRIC",
-            statistic="Average", # I probably shouldn't use average.
-            period=Duration.minutes(5),
-            dimensions_map={"URL": website_url},
-        )
-        latency_metric = cloudwatch.Metric(
-            namespace="WebHealth",
-            metric_name="LATENCY_METRIC",
-            statistic="Average", # I probably shouldn't use average.
-            period=Duration.minutes(5),
-            dimensions_map={"URL": website_url},
-        )
-        http_status_code_metric = cloudwatch.Metric(
-            namespace="WebHealth",
-            metric_name="HTTP_STATUS_CODE",
-            statistic="Average", # I probably shouldn't use average.
-            period=Duration.minutes(5),
-            dimensions_map={"URL": website_url},
-        )
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Metric.html
+        # Creates CloudWatch metrics for each website.
+        # The URL dimension allows CloudWatch to distinguish between the different websites.
+
+        availability_metrics = []
+        latency_metrics = []
+        http_status_code_metrics = []
+
+        for website_url in website_urls:
+
+            # Creates an availability metric for the current website.
+            availability_metrics.append(
+                cloudwatch.Metric(
+                    namespace="WebHealth",
+                    metric_name="AVAILABILITY_METRIC",
+                    statistic="Average",  # I probably shouldn't use average.
+                    period=Duration.minutes(5),
+                    dimensions_map={"URL": website_url},
+                )
+            )
+
+            # Creates a latency metric for the current website.
+            latency_metrics.append(
+                cloudwatch.Metric(
+                    namespace="WebHealth",
+                    metric_name="LATENCY_METRIC",
+                    statistic="Average",  # I probably shouldn't use average.
+                    period=Duration.minutes(5),
+                    dimensions_map={"URL": website_url},
+                )
+            )
+
+            # Creates an HTTP status code metric for the current website.
+            http_status_code_metrics.append(
+                cloudwatch.Metric(
+                    namespace="WebHealth",
+                    metric_name="HTTP_STATUS_CODE",
+                    statistic="Average",  # I probably shouldn't use average.
+                    period=Duration.minutes(5),
+                    dimensions_map={"URL": website_url},
+                )
+            )
 
         ## Notification service to notify ourselves of any significant change in our metric
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns/Topic.html        
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns/Topic.html
         topic = sns.Topic(self, "AlarmNotifications")
+
         # When an alarm is triggered, an email will be sent to the specified email address.
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/EmailSubscription.html
-        topic.add_subscription(subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au"))
+        topic.add_subscription(
+            subscriptions.EmailSubscription("22195904@student.westernsydney.edu.au")
+        )
+
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns_subscriptions/LambdaSubscription.html
         # When an alarm is triggered, the lambda function will be invoked. This can be used to perform any additional actions when an alarm is triggered.
-        topic.add_subscription(subscriptions.LambdaSubscription(alarm_logger))
+        topic.add_subscription(
+            subscriptions.LambdaSubscription(alarm_logger)
+        )
+
         alarm_action = cloudwatch_actions.SnsAction(topic)
 
         # Creates an alarm for website availability metric. If the availability drops below 90%, the alarm will be triggered.
@@ -135,14 +174,16 @@ class JoshuaStack(Stack):
             self,
             "WebsiteAvailabilityAlarm",
             alarm_name="WebsiteAvailabilityAlarm",
-            metric=availability_metric,
+            metric=availability_metrics[0],
             threshold=0.9,
             evaluation_periods=2,
             comparison_operator=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site availability drops below 90%.",
         )
+
         availabilityAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
         availabilityAlarm.add_alarm_action(alarm_action)
 
@@ -151,14 +192,17 @@ class JoshuaStack(Stack):
             self,
             "WebsiteLatencyAlarm",
             alarm_name="WebsiteLatencyAlarm",
-            metric=latency_metric,
+            metric=latency_metrics[0],
             threshold=2,
             evaluation_periods=2,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site latency exceeds 2 seconds.",
         )
+
         latencyAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/Alarm.html
         latencyAlarm.add_alarm_action(alarm_action)
 
         # Create alarm for HTTP status codes (4xx and 5xx)
@@ -166,14 +210,16 @@ class JoshuaStack(Stack):
             self,
             "WebsiteHttpStatusAlarm",
             alarm_name="WebsiteHttpStatusAlarm",
-            metric=http_status_code_metric,
+            metric=http_status_code_metrics[0],
             threshold=400,
             evaluation_periods=2,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
             alarm_description="Alarm when the site returns 4xx or 5xx HTTP status codes.",
         )
+
         httpStatusAlarm.apply_removal_policy(RemovalPolicy.DESTROY)
+
         httpStatusAlarm.add_alarm_action(alarm_action)
 
         # CloudWatch dashboard for website health monitoring
@@ -183,28 +229,31 @@ class JoshuaStack(Stack):
             dashboard_name="WebHealthMonitoring",
         )
 
-        #https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/README.html#dashboards
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/README.html#dashboards
+        # GraphWidget can display multiple metrics on the same graph.
+        # Each metric has a URL dimension, allowing all three websites to be displayed separately.
         dashboard.add_widgets(
-            # Creates a graph for availibility metric
+            # Creates a graph for availability metrics for all three websites.
             cloudwatch.GraphWidget(
                 title="Website Availability",
-                left=[availability_metric],
+                left=availability_metrics,
             ),
-            # Creates a graph for latency metric
+
+            # Creates a graph for latency metrics for all three websites.
             cloudwatch.GraphWidget(
                 title="Website Latency",
-                left=[latency_metric],
+                left=latency_metrics,
             ),
-            # Creates a graph for Http status codes metric
+
+            # Creates a graph for HTTP status code metrics for all three websites.
             cloudwatch.GraphWidget(
                 title="HTTP Status Codes",
-                left=[http_status_code_metric],
+                left=http_status_code_metrics,
             ),
         )
 
-
         # I may have missed some info on topics/ alarm action / subscriptions. Though I'm not too sure.
 
-        #Logging alarm information in DynamoDB databse
+        # Logging alarm information in DynamoDB database
 
-        #Create dyanmoDB, but pass it into the lambda function so it can write into the database?
+        # Create dynamoDB, but pass it into the lambda function so it can write into the database?
