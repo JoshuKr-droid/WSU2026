@@ -24,9 +24,11 @@ class PipelineStack(Stack):
             "Synth",
             input=source,
             commands=[
+                "pwd",
+                "ls -la",
+                "find . -maxdepth 2 -type f",
+                "python -m pip install -r requirements.txt",
                 "npm install -g aws-cdk",
-                "python -m pip install --upgrade pip",
-                "python -m pip install -r joshua/requirements.txt",
                 "cdk synth",
             ],
             primary_output_directory="cdk.out",
