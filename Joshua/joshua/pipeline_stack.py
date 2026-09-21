@@ -24,13 +24,14 @@ class PipelineStack(Stack):
             "Synth",
             input=source,
             commands=[
-                "pwd",
-                "ls -la",
-                "find . -maxdepth 3 -type f",
+                "cd Joshua",
+                "python -m pip install -r requirements.txt",
+                "npm install -g aws-cdk",
+                "cdk synth",
             ],
-
-            primary_output_directory="cdk.out",
+            primary_output_directory="Joshua/cdk.out",
         )
+
 
         pipeline = pipelines.CodePipeline(
             self,
