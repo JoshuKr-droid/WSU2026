@@ -7,7 +7,7 @@ from joshua.pipeline_stack import PipelineStack
 
 
 app = cdk.App()
-PipelineStack(app, "JoshuaStack",
+PipelineStack(app, "PipelineStack",
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
