@@ -3,8 +3,13 @@ from aws_cdk import (
     pipelines,
     SecretValue,
     aws_codepipeline_actions as codepipeline_actions,
+    Stage,
 )
 from constructs import Construct
+from joshua_stack import JoshuaStack
+from pipeline_stage import MyPipelineStage
+
+# pipeline is region scoped
 
 # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines.html
 
@@ -21,24 +26,66 @@ class PipelineStack(Stack):
         )
 
         synth = pipelines.ShellStep(
-            "Synth",
+            id = "Synth",
             input=source,
             commands=[
+                "npm install -g aws-cdk",
                 "cd Joshua",
                 "python -m pip install -r requirements.txt",
-                "npm install -g aws-cdk",
                 "cdk synth",
             ],
             primary_output_directory="Joshua/cdk.out",
         )
 
 
-        pipeline = pipelines.CodePipeline(
-            self,
-            "Pipeline",
+        pipeline = pipelines.CodePipeline(self,
+            id = "Pipeline",
             synth=synth,
         )
 
-# All of this is based on me trying to follow the teacher
-# Save name and token as a comment?
+# https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk/Stage.html
+
+# A stage is a class used to instantiate our application stack
+
+# The alpha, beta, and gamma stages are below
+
+# https://docs.aws.amazon.com/cdk/v2/guide/stages.html 
+        Alpha = MyPipelineStage(self, "AlphaStage")
+
+        pipeline.add_stage(
+            stage = Alpha,
+            post = [pipelines.ShellStep(
+            id = "UnitTests",
+            commands=[
+                "npm install -g aws-cdk",
+                "cd Joshua",
+                "python -m pip install -r requirements.txt",
+                "pip install pytest",
+                "python -m pytests",
+            ],
+            primary_output_directory="Joshua/cdk.out",
+        )])
+
+        Beta = MyPipelineStage(self, "Beta Stage")
+        
+        pipeline.add_stage(
+            stage = Alpha,
+            post = [run functional tests here])
+
+        Gamma = MyPipelineStage(self, "Gamma Stage")
+        
+        pipeline.add_stage(
+            stage = Alpha,
+            post = [run integration tests here])
+
+        prod = MyPipelineStage(self, "Production Stage")
+        pipeline.add_stage(
+            stage = prod,
+            pre=[pipelines.ManualApprovalStep("PromoteToProd",
+                comment = "Please validate changes")]
+        )
+
+        
+
+
 # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines/ShellStep.html

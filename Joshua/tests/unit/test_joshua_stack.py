@@ -2,11 +2,16 @@
 
 import aws_cdk as core
 import aws_cdk.assertions as assertions
+# https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.assertions/README.html 
+# Use this link to help with tests...
 
 from joshua.joshua_stack import JoshuaStack
 
 # example tests. To run these tests, uncomment this file along with the example
 # resource in joshua/joshua_stack.py
+
+# Test if lambbda is being created #
+
 def test_lambda_and_schedule_created():
     # Creates a CDK application and a stack
     app = core.App()
@@ -44,3 +49,5 @@ def test_lambda_and_schedule_created():
     )
 
     # When AWS::Something::Something strings in CDK tests, think: "That's the CloudFormation name for the AWS resource I'm checking."
+
+# I am supposed to have 10 unit tests in total...
