@@ -69,14 +69,16 @@ class PipelineStack(Stack):
         Beta = MyPipelineStage(self, "Beta Stage")
         
         pipeline.add_stage(
-            stage = Alpha,
-            post = [run functional tests here])
+            stage = Beta,
+            #post = [run functional tests here]'
+            )
 
         Gamma = MyPipelineStage(self, "Gamma Stage")
         
         pipeline.add_stage(
-            stage = Alpha,
-            post = [run integration tests here])
+            stage = Gamma,
+            #post = [run integration tests here]
+        )
 
         prod = MyPipelineStage(self, "Production Stage")
         pipeline.add_stage(
@@ -86,6 +88,4 @@ class PipelineStack(Stack):
         )
 
         
-
-
 # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.pipelines/ShellStep.html
