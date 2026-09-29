@@ -3,12 +3,12 @@ import os
 
 import aws_cdk as cdk
 
-#from joshua.joshua_stack import JoshuaStack
-from joshua.pipeline_stack import PipelineStack
+from joshua.joshua_stack import JoshuaStack
+#from joshua.pipeline_stack import PipelineStack
 
 
 app = cdk.App()
-PipelineStack(app, "PipelineStack", # Replace with PipelineStack
+JoshuaStack(app, "JoshuaStack", # Replace with PipelineStack, or JoshuaStack
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

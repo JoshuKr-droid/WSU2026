@@ -30,8 +30,14 @@ def lambda_handler(event, context):
             # it will continue to the next line of code. If not, it will raise an exception.
             with urllib.request.urlopen(site_url, timeout=10) as response:
                 status_code = response.getcode()
-                availability = 1 if 200 <= status_code < 400 else 0
+                # Website is considered available if it returns a 2xx or 3xx response.
+                if 200 <= status_code < 400:
+                    availability = 1
+                else:
+                    availability = 0
+
             latency = time.time() - start_time
+
         except Exception:
             # For now, if something goes wrong it will set the metrics to 0.
             availability = 0
@@ -76,7 +82,9 @@ def lambda_handler(event, context):
                 }
             ]
         )
-        # Http status code metric is a count of the number of occurrences of each status code. The unit for this metric is "Count".
+
+        # Http status code metric is the HTTP status code returned by the website.
+        # A value of 0 means that no HTTP response was received.
         response3 = client.put_metric_data(
             Namespace=constants.namespace,
             MetricData=[
@@ -88,16 +96,37 @@ def lambda_handler(event, context):
                             'Value': site_url
                         }
                     ],
-                    # Unit for status code metric is count, as it counts the number of occurrences of each status code
-                    'Unit': 'Count',
+                    # Unit for status code metric is None because the value is the actual HTTP status code.
+                    'Unit': 'None',
                     'Value': status_code
                 }
             ]
         )
+
         # Calls the putDataFunc function from CWPutData.py to send the metrics to CloudWatch. This is a more modular approach, as it allows for easier testing and maintenance of the code.
-        cw.putDataFunc(constants.namespace, constants.metricAvailability, site_url, availability, 'None')
-        cw.putDataFunc(constants.namespace, constants.metricLatency, site_url, latency, 'Seconds')
-        cw.putDataFunc(constants.namespace, constants.metricStatusCode, site_url, status_code, 'Count')
+        cw.putDataFunc(
+            constants.namespace,
+            constants.metricAvailability,
+            site_url,
+            availability,
+            'None'
+        )
+
+        cw.putDataFunc(
+            constants.namespace,
+            constants.metricLatency,
+            site_url,
+            latency,
+            'Seconds'
+        )
+
+        cw.putDataFunc(
+            constants.namespace,
+            constants.metricStatusCode,
+            site_url,
+            status_code,
+            'None'
+        )
 
     # Returns a response to indicate that the metrics have been published successfully. The response includes the last responses from the put_metric_data calls for availability, latency, and status code metrics.
     return {

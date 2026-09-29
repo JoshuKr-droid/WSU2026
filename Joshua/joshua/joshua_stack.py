@@ -90,7 +90,7 @@ class JoshuaStack(Stack):
         rule = events.Rule(
             self,
             "LambdaInvocationRule",
-            schedule=events.Schedule.rate(Duration.minutes(2)),
+            schedule=events.Schedule.rate(Duration.minutes(5)),
         )
 
         # Tells to invoke the lambda function when the rule is triggered
@@ -140,11 +140,12 @@ class JoshuaStack(Stack):
             )
 
             # Creates an HTTP status code metric for the current website.
+            # Maximum is used so that a 4xx or 5xx response is not hidden by successful responses.
             http_status_code_metrics.append(
                 cloudwatch.Metric(
                     namespace="WebHealth",
                     metric_name="HTTP_STATUS_CODE",
-                    statistic="Average",  # I probably shouldn't use average.
+                    statistic="Maximum",
                     period=Duration.minutes(5),
                     dimensions_map={"URL": website_url},
                 )
@@ -230,9 +231,9 @@ class JoshuaStack(Stack):
                 metric=http_status_code_metrics[i],
                 threshold=400,
                 evaluation_periods=2,
-                comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
                 treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
-                alarm_description=f"Alarm when {website_url} returns an HTTP status code greater than 400.",
+                alarm_description=f"Alarm when {website_url} returns a 4xx or 5xx HTTP status code.",
             )
 
             # Destruction policy for the alarm.
