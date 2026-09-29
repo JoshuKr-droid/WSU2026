@@ -6,8 +6,9 @@ from aws_cdk import (
     Stage,
 )
 from constructs import Construct
-from joshua_stack import JoshuaStack
-from pipeline_stage import MyPipelineStage
+from joshua.joshua_stack import JoshuaStack
+from joshua.pipeline_stage import MyPipelineStage
+
 
 # pipeline is region scoped
 
@@ -66,21 +67,21 @@ class PipelineStack(Stack):
             primary_output_directory="Joshua/cdk.out",
         )])
 
-        Beta = MyPipelineStage(self, "Beta Stage")
+        Beta = MyPipelineStage(self, "BetaStage")
         
         pipeline.add_stage(
             stage = Beta,
             #post = [run functional tests here]'
             )
 
-        Gamma = MyPipelineStage(self, "Gamma Stage")
+        Gamma = MyPipelineStage(self, "GammaStage")
         
         pipeline.add_stage(
             stage = Gamma,
             #post = [run integration tests here]
         )
 
-        prod = MyPipelineStage(self, "Production Stage")
+        prod = MyPipelineStage(self, "ProductionStage")
         pipeline.add_stage(
             stage = prod,
             pre=[pipelines.ManualApprovalStep("PromoteToProd",

@@ -2,7 +2,8 @@ from aws_cdk import (
     Stage,
 )
 from constructs import Construct
-from joshua_stack import JoshuaStack
+from joshua.joshua_stack import JoshuaStack
+
 
 
 class MyPipelineStage(Stage):
@@ -10,4 +11,4 @@ class MyPipelineStage(Stage):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        ApplicationStack = JoshuaStack(self, id="APP")
+        ApplicationStack = JoshuaStack(self, "APP")
