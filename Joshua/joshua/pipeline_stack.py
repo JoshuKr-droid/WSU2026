@@ -62,7 +62,7 @@ class PipelineStack(Stack):
                 "cd Joshua",
                 "python -m pip install -r requirements.txt",
                 "pip install pytest",
-                "python -m pytests",
+                "python -m pytest",
             ],
             primary_output_directory="Joshua/cdk.out",
         )])
