@@ -123,7 +123,7 @@ class JoshuaStack(Stack):
                     namespace="WebHealth",
                     metric_name="AVAILABILITY_METRIC",
                     statistic="Average",  # I probably shouldn't use average.
-                    period=Duration.minutes(5),
+                    period=Duration.minutes(2),
                     dimensions_map={"URL": website_url},
                 )
             )

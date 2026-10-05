@@ -46,62 +46,6 @@ def lambda_handler(event, context):
 
         # Sends the availability, latency, and status code metrics to CloudWatch
         # using the putDataFunc function from CWPutData.py.
-        response1 = client.put_metric_data(
-            Namespace=constants.namespace,
-            MetricData=[
-                {
-                    'MetricName': constants.metricAvailability,
-                    # Tells which website the metric is for
-                    'Dimensions': [
-                        {
-                            'Name': 'URL',
-                            'Value': site_url
-                        }
-                    ],
-                    # No specefic unit for availability metric, as it is a binary value (0 or 1)
-                    'Unit': 'None',
-                    'Value': availability
-                }
-            ]
-        )
-
-        response2 = client.put_metric_data(
-            Namespace=constants.namespace,
-            MetricData=[
-                {
-                    'MetricName': constants.metricLatency,
-                    'Dimensions': [
-                        {
-                            'Name': 'URL',
-                            'Value': site_url
-                        }
-                    ],
-                    # Unit for latency metric is seconds, as it measures the time taken to receive a response from the website
-                    'Unit': 'Seconds',
-                    'Value': latency
-                }
-            ]
-        )
-
-        # Http status code metric is the HTTP status code returned by the website.
-        # A value of 0 means that no HTTP response was received.
-        response3 = client.put_metric_data(
-            Namespace=constants.namespace,
-            MetricData=[
-                {
-                    'MetricName': constants.metricStatusCode,
-                    'Dimensions': [
-                        {
-                            'Name': 'URL',
-                            'Value': site_url
-                        }
-                    ],
-                    # Unit for status code metric is None because the value is the actual HTTP status code.
-                    'Unit': 'None',
-                    'Value': status_code
-                }
-            ]
-        )
 
         # Calls the putDataFunc function from CWPutData.py to send the metrics to CloudWatch. This is a more modular approach, as it allows for easier testing and maintenance of the code.
         cw.putDataFunc(
@@ -131,10 +75,7 @@ def lambda_handler(event, context):
     # Returns a response to indicate that the metrics have been published successfully. The response includes the last responses from the put_metric_data calls for availability, latency, and status code metrics.
     return {
         'statusCode': 200,
-        'body': 'Metric publishing complete',
-        'lastAvailabilityResponse': response1,
-        'lastLatencyResponse': response2,
-        'lastStatusCodeResponse': response3
+        'body': 'Metric publishing complete'
     }
 
 # If a component is part of your infrastructure, it should go into the stack file.
