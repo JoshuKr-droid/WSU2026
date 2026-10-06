@@ -63,8 +63,7 @@ class PipelineStack(Stack):
                 "python -m pip install -r requirements.txt",
                 "pip install pytest",
                 "python -m pytest",
-            ],
-            primary_output_directory="Joshua/cdk.out",
+            ]
         )])
 
         Beta = MyPipelineStage(self, "BetaStage")
