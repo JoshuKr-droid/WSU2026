@@ -181,7 +181,6 @@ class JoshuaStack(Stack):
             availabilityAlarm = cloudwatch.Alarm(
                 self,
                 f"WebsiteAvailabilityAlarm{i}",
-                alarm_name=f"WebsiteAvailabilityAlarm-{i}",
                 metric=availability_metrics[i],
                 threshold=0.9,
                 evaluation_periods=2,
@@ -204,7 +203,6 @@ class JoshuaStack(Stack):
             latencyAlarm = cloudwatch.Alarm(
                 self,
                 f"WebsiteLatencyAlarm{i}",
-                alarm_name=f"WebsiteLatencyAlarm-{i}",
                 metric=latency_metrics[i],
                 threshold=2,
                 evaluation_periods=2,
@@ -227,7 +225,6 @@ class JoshuaStack(Stack):
             httpStatusAlarm = cloudwatch.Alarm(
                 self,
                 f"WebsiteHttpStatusAlarm{i}",
-                alarm_name=f"WebsiteHttpStatusAlarm-{i}",
                 metric=http_status_code_metrics[i],
                 threshold=400,
                 evaluation_periods=2,
@@ -249,7 +246,6 @@ class JoshuaStack(Stack):
         dashboard = cloudwatch.Dashboard(
             self,
             "WebHealthDashboard",
-            dashboard_name="WebHealthMonitoring",
         )
 
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_cloudwatch/README.html#dashboards

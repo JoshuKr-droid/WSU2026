@@ -72,10 +72,11 @@ def lambda_handler(event, context):
             'None'
         )
 
-    # Returns a response to indicate that the metrics have been published successfully. The response includes the last responses from the put_metric_data calls for availability, latency, and status code metrics.
+    # Returns a response to indicate that the metrics have been published successfully.
     return {
         'statusCode': 200,
         'body': 'Metric publishing complete'
     }
+
 
 # If a component is part of your infrastructure, it should go into the stack file.
