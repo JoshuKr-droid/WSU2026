@@ -69,15 +69,36 @@ class PipelineStack(Stack):
         Beta = MyPipelineStage(self, "BetaStage")
         
         pipeline.add_stage(
-            stage = Beta,
-            #post = [run functional tests here]'
-            )
+            stage=Beta,
+            post=[
+                pipelines.ShellStep(
+                    id="FunctionalTests",
+                    commands=[
+                        "cd Joshua",
+                        "python -m pip install -r requirements.txt",
+                        "pip install pytest",
+                        "python -m pytest tests/functional",
+                    ],
+                )
+            ],
+        )
+
 
         Gamma = MyPipelineStage(self, "GammaStage")
         
         pipeline.add_stage(
-            stage = Gamma,
-            #post = [run integration tests here]
+            stage=Gamma,
+            post=[
+                pipelines.ShellStep(
+                    id="IntegrationTests",
+                    commands=[
+                        "cd Joshua",
+                        "python -m pip install -r requirements.txt",
+                        "pip install pytest",
+                        "python -m pytest tests/integration",
+                    ],
+                )
+            ],
         )
 
         prod = MyPipelineStage(self, "ProductionStage")
