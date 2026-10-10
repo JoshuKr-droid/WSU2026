@@ -1,0 +1,740 @@
+{
+ "Resources": {
+  "WebHealthLambdaServiceRole76BAA822": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebHealthLambda/ServiceRole/Resource"
+   }
+  },
+  "WebHealthLambdaServiceRoleDefaultPolicyF4A88053": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "cloudwatch:PutMetricData",
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "WebHealthLambdaServiceRoleDefaultPolicyF4A88053",
+    "Roles": [
+     {
+      "Ref": "WebHealthLambdaServiceRole76BAA822"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebHealthLambda/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "WebHealthLambdaB270CBD9": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-065431567922-ap-southeast-2",
+     "S3Key": "63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3.zip"
+    },
+    "Handler": "webhealth.lambda_handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "WebHealthLambdaServiceRole76BAA822",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.14",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "WebHealthLambdaServiceRoleDefaultPolicyF4A88053",
+    "WebHealthLambdaServiceRole76BAA822"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebHealthLambda/Resource",
+    "aws:asset:path": "..\\asset.63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "WebHealthLambdaLogGroupA1BA5A7C": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "WebHealthLambdaB270CBD9"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebHealthLambda/LogGroup/Resource"
+   }
+  },
+  "AlarmLogTable5602BB0A": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "alarm_name",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "state_change_time",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "alarm_name",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "state_change_time",
+      "KeyType": "RANGE"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLogTable/Resource"
+   }
+  },
+  "AlarmLoggerLambdaServiceRole34E88555": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/ServiceRole/Resource"
+   }
+  },
+  "AlarmLoggerLambdaServiceRoleDefaultPolicy0DCA4EA0": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "dynamodb:BatchWriteItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "AlarmLogTable5602BB0A",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "AlarmLoggerLambdaServiceRoleDefaultPolicy0DCA4EA0",
+    "Roles": [
+     {
+      "Ref": "AlarmLoggerLambdaServiceRole34E88555"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "AlarmLoggerLambda09DBC66C": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-065431567922-ap-southeast-2",
+     "S3Key": "63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "ALARM_LOG_TABLE": {
+       "Ref": "AlarmLogTable5602BB0A"
+      }
+     }
+    },
+    "Handler": "alarm_logger.lambda_handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "AlarmLoggerLambdaServiceRole34E88555",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.14"
+   },
+   "DependsOn": [
+    "AlarmLoggerLambdaServiceRoleDefaultPolicy0DCA4EA0",
+    "AlarmLoggerLambdaServiceRole34E88555"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/Resource",
+    "aws:asset:path": "..\\asset.63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "AlarmLoggerLambdaLogGroupFFF71FD7": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "AlarmLoggerLambda09DBC66C"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/LogGroup/Resource"
+   }
+  },
+  "AlarmLoggerLambdaAllowInvokePipelineStackProductionStageAPPAlarmNotifications89E6C34663504194": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AlarmLoggerLambda09DBC66C",
+      "Arn"
+     ]
+    },
+    "Principal": "sns.amazonaws.com",
+    "SourceArn": {
+     "Ref": "AlarmNotificationsA4AFC78C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/AllowInvoke:PipelineStackProductionStageAPPAlarmNotifications89E6C346"
+   }
+  },
+  "AlarmLoggerLambdaAlarmNotifications79F5B791": {
+   "Type": "AWS::SNS::Subscription",
+   "Properties": {
+    "Endpoint": {
+     "Fn::GetAtt": [
+      "AlarmLoggerLambda09DBC66C",
+      "Arn"
+     ]
+    },
+    "Protocol": "lambda",
+    "TopicArn": {
+     "Ref": "AlarmNotificationsA4AFC78C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmLoggerLambda/AlarmNotifications/Resource"
+   }
+  },
+  "LambdaInvocationRule3D08A0C6": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "ScheduleExpression": "rate(5 minutes)",
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "WebHealthLambdaB270CBD9",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/LambdaInvocationRule/Resource"
+   }
+  },
+  "LambdaInvocationRuleAllowEventRulePipelineStackProductionStageAPPWebHealthLambda25BA1430A3336837": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "WebHealthLambdaB270CBD9",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "LambdaInvocationRule3D08A0C6",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/LambdaInvocationRule/AllowEventRulePipelineStackProductionStageAPPWebHealthLambda25BA1430"
+   }
+  },
+  "AlarmNotificationsA4AFC78C": {
+   "Type": "AWS::SNS::Topic",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmNotifications/Resource"
+   }
+  },
+  "AlarmNotifications22195904studentwesternsydneyeduauA89C0CE0": {
+   "Type": "AWS::SNS::Subscription",
+   "Properties": {
+    "Endpoint": "22195904@student.westernsydney.edu.au",
+    "Protocol": "email",
+    "TopicArn": {
+     "Ref": "AlarmNotificationsA4AFC78C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/AlarmNotifications/22195904@student.westernsydney.edu.au/Resource"
+   }
+  },
+  "WebsiteAvailabilityAlarm0B912A42E": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.westernsydney.edu.au/ availability drops below 90%.",
+    "ComparisonOperator": "LessThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.westernsydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "AVAILABILITY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 120,
+    "Statistic": "Average",
+    "Threshold": 0.9,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteAvailabilityAlarm0/Resource"
+   }
+  },
+  "WebsiteLatencyAlarm061BC6D16": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.westernsydney.edu.au/ latency exceeds 2 seconds.",
+    "ComparisonOperator": "GreaterThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.westernsydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "LATENCY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 2,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteLatencyAlarm0/Resource"
+   }
+  },
+  "WebsiteHttpStatusAlarm080F12085": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.westernsydney.edu.au/ returns a 4xx or 5xx HTTP status code.",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.westernsydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "HTTP_STATUS_CODE",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Maximum",
+    "Threshold": 400,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteHttpStatusAlarm0/Resource"
+   }
+  },
+  "WebsiteAvailabilityAlarm1C4CB340E": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.unsw.edu.au/ availability drops below 90%.",
+    "ComparisonOperator": "LessThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.unsw.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "AVAILABILITY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 120,
+    "Statistic": "Average",
+    "Threshold": 0.9,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteAvailabilityAlarm1/Resource"
+   }
+  },
+  "WebsiteLatencyAlarm11ED5F300": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.unsw.edu.au/ latency exceeds 2 seconds.",
+    "ComparisonOperator": "GreaterThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.unsw.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "LATENCY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 2,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteLatencyAlarm1/Resource"
+   }
+  },
+  "WebsiteHttpStatusAlarm104ED7C93": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.unsw.edu.au/ returns a 4xx or 5xx HTTP status code.",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.unsw.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "HTTP_STATUS_CODE",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Maximum",
+    "Threshold": 400,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteHttpStatusAlarm1/Resource"
+   }
+  },
+  "WebsiteAvailabilityAlarm28CCAFFD5": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.sydney.edu.au/ availability drops below 90%.",
+    "ComparisonOperator": "LessThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.sydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "AVAILABILITY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 120,
+    "Statistic": "Average",
+    "Threshold": 0.9,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteAvailabilityAlarm2/Resource"
+   }
+  },
+  "WebsiteLatencyAlarm220A8E04A": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.sydney.edu.au/ latency exceeds 2 seconds.",
+    "ComparisonOperator": "GreaterThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.sydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "LATENCY_METRIC",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 2,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteLatencyAlarm2/Resource"
+   }
+  },
+  "WebsiteHttpStatusAlarm2153CDD4D": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AlarmNotificationsA4AFC78C"
+     }
+    ],
+    "AlarmDescription": "Alarm when https://www.sydney.edu.au/ returns a 4xx or 5xx HTTP status code.",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "URL",
+      "Value": "https://www.sydney.edu.au/"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "HTTP_STATUS_CODE",
+    "Namespace": "WebHealth",
+    "Period": 300,
+    "Statistic": "Maximum",
+    "Threshold": 400,
+    "TreatMissingData": "breaching"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebsiteHttpStatusAlarm2/Resource"
+   }
+  },
+  "WebHealthDashboardA3196F59": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Website Availability\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"WebHealth\",\"AVAILABILITY_METRIC\",\"URL\",\"https://www.westernsydney.edu.au/\",{\"period\":120}],[\"WebHealth\",\"AVAILABILITY_METRIC\",\"URL\",\"https://www.unsw.edu.au/\",{\"period\":120}],[\"WebHealth\",\"AVAILABILITY_METRIC\",\"URL\",\"https://www.sydney.edu.au/\",{\"period\":120}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Website Latency\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"WebHealth\",\"LATENCY_METRIC\",\"URL\",\"https://www.westernsydney.edu.au/\"],[\"WebHealth\",\"LATENCY_METRIC\",\"URL\",\"https://www.unsw.edu.au/\"],[\"WebHealth\",\"LATENCY_METRIC\",\"URL\",\"https://www.sydney.edu.au/\"]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"HTTP Status Codes\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"WebHealth\",\"HTTP_STATUS_CODE\",\"URL\",\"https://www.westernsydney.edu.au/\",{\"stat\":\"Maximum\"}],[\"WebHealth\",\"HTTP_STATUS_CODE\",\"URL\",\"https://www.unsw.edu.au/\",{\"stat\":\"Maximum\"}],[\"WebHealth\",\"HTTP_STATUS_CODE\",\"URL\",\"https://www.sydney.edu.au/\",{\"stat\":\"Maximum\"}]],\"yAxis\":{}}}]}"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/WebHealthDashboard/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+2X3W/bIBDA/5byWFGvaytNylu6ZtO0dk2TbNUUVdUFrjYrBouPRhHy/z6Bjfu1b+1lU54Mxx33gzvOcFAcvNov9ndgbfcYv92TYlWEuQN2S2Ftr4OEesWhCG+8Yk5otQzkpm9+gBrJiOwSSpyoUXvX95jmeaACxSWavme8ipqp19JAUN0Jo1WN6rdNgfPJQ+tl0tolV+0VfX2jMm5sT9HUwlqhVUsF1EWYaYnLQMBaXyM/3pBRII0RiokG5Jgx7QeeTicajNN8vX9Sg4IS+VRLwQRaMlqGR7LN2PS6Vz3tQk+zi04j2vSjzgGr3ikpFA5jaS0/HfzHl5BiFdFoJ09RzAYLHUeezfNczPncgcOYCDYj/a2JEmEH11J7eA3WorPFOH6oPSyOPbtFdwwWhwykUpe2CKe6fGu0b5aByL45nJjo7bkw+cpmLeUbBbXmqyIsYJUytgHjRIzhe0wRVw9O4KaJzXmMrNXG/VhjJaQUqjzrTtt0/Pl6OpldzyYXHyfzRTxtWOu7+ygTjtYZvYmzRJQnyAmvpVbZIsz9yjIjmr5WON0I1gOg4o0WQ142RjvNtCQj0hUZQsmNkA7N4Hb3iehSuOoMrYUSjzXPGgbLnNaUcAR+is6hufDo73f710CwBiH/lOObrtMGPdwUuogkeWue7mSUtRTvYgYWYeZT2C2rkHv5uPhFlSlEb+pxCi/AlOgepm+cpqVMas/X4FhVhLEEUy8DwTuQHiLWFI3Q3OZcqQzaSkuea0jUP8FhEUO1rhswwmp13qABp3O1dgbBncWiq8oTcEBGZGUQWCVUSSip0ZkYjUDWYJRQZfabu58OurX2S0q4uXrlkrNl37Jv2bfsW/b/kD39t5KYnoCtVhoMz5dDzi8FL7G7opG14K7KTwYUZeWe+PqOa/r4wTB4aVuaLndzB6VQJZ2h1d6wdL1LmufeNd61dLpxlVYvDouXR8XRzhcrxF7/SClm3fcrL6rTcVwNAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "PipelineStack/ProductionStage/APP/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "WebHealthLambdaName": {
+   "Value": {
+    "Fn::GetAtt": [
+     "WebHealthLambdaB270CBD9",
+     "Arn"
+    ]
+   }
+  },
+  "AlarmNotificationsTopicArn": {
+   "Value": {
+    "Ref": "AlarmNotificationsA4AFC78C"
+   }
+  },
+  "AlarmLogTableName": {
+   "Value": {
+    "Ref": "AlarmLogTable5602BB0A"
+   }
+  },
+  "AlarmLogTableArn": {
+   "Value": {
+    "Fn::GetAtt": [
+     "AlarmLogTable5602BB0A",
+     "Arn"
+    ]
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

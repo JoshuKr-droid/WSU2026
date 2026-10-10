@@ -1,0 +1,36 @@
+{
+  "version": "54.0.0",
+  "files": {
+    "63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3": {
+      "displayName": "WebHealthLambda/Code",
+      "source": {
+        "path": "..\\asset.63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "065431567922-ap-southeast-2-fd24fb0a": {
+          "bucketName": "cdk-hnb659fds-assets-065431567922-ap-southeast-2",
+          "objectKey": "63828f0cf6eae57720ddee433f350c5dcfd96ea7c91244284dece62a14b5b5e3.zip",
+          "region": "ap-southeast-2",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::065431567922:role/cdk-hnb659fds-file-publishing-role-065431567922-ap-southeast-2"
+        }
+      }
+    },
+    "0d31d227f9af082962bc0b566fdadedd9018fec84686f8632ddd660d1393ae2a": {
+      "displayName": "GammaStage-APP Template",
+      "source": {
+        "path": "PipelineStackGammaStageAPP5CC53288.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "065431567922-ap-southeast-2-a352a755": {
+          "bucketName": "cdk-hnb659fds-assets-065431567922-ap-southeast-2",
+          "objectKey": "0d31d227f9af082962bc0b566fdadedd9018fec84686f8632ddd660d1393ae2a.json",
+          "region": "ap-southeast-2",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::065431567922:role/cdk-hnb659fds-file-publishing-role-065431567922-ap-southeast-2"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

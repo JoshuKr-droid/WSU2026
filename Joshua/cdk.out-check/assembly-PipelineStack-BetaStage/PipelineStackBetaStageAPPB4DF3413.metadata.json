@@ -1,0 +1,953 @@
+{
+  "/PipelineStack/BetaStage/APP": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "functionName": "*",
+        "timeout": "*",
+        "code": "*",
+        "handler": "*",
+        "runtime": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLogTable": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "partitionKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "sortKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "billingMode": "PAY_PER_REQUEST",
+        "removalPolicy": "destroy",
+        "tableName": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:hasPhysicalName",
+      "data": {
+        "Ref": "AlarmLogTable5602BB0A"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "environment": "*",
+        "code": "*",
+        "handler": "*",
+        "runtime": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/LambdaInvocationRule": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "schedule": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEventPattern": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addTarget": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmNotifications": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "topicName": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm0": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm0": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm0": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm1": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm1": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm1": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm2": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm2": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm2": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "evaluationPeriods": "*",
+        "threshold": "*",
+        "alarmDescription": "*",
+        "comparisonOperator": "*",
+        "treatMissingData": "breaching",
+        "metric": {
+          "warnings": "*",
+          "warningsV2": "*"
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addAlarmAction": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthDashboard": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addWidgets": [
+          {
+            "width": "*",
+            "height": "*",
+            "warnings": "*",
+            "warningsV2": "*"
+          },
+          "*",
+          "*"
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambdaName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthLambdaName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmNotificationsTopicArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmNotificationsTopicArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLogTableName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLogTableName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLogTableArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLogTableArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/ServiceRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "assumedBy": {
+          "principalAccount": "*",
+          "assumeRoleAction": "*"
+        },
+        "managedPolicies": [
+          {
+            "managedPolicyArn": "*"
+          }
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthLambdaB270CBD9"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/LogGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "logGroupName": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLogTable/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLogTable5602BB0A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLogTable/ScalingRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/ServiceRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "assumedBy": {
+          "principalAccount": "*",
+          "assumeRoleAction": "*"
+        },
+        "managedPolicies": [
+          {
+            "managedPolicyArn": "*"
+          }
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambda09DBC66C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/LogGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "logGroupName": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/AllowInvoke:PipelineStackBetaStageAPPAlarmNotifications653F7CE2": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambdaAllowInvokePipelineStackBetaStageAPPAlarmNotifications653F7CE2D1846834"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/AlarmNotifications": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "topic": "*",
+        "endpoint": "*",
+        "protocol": "lambda",
+        "filterPolicy": "*",
+        "filterPolicyWithMessageBody": "*",
+        "region": "*",
+        "deadLetterQueue": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/LambdaInvocationRule/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdaInvocationRule3D08A0C6"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/LambdaInvocationRule/AllowEventRulePipelineStackBetaStageAPPWebHealthLambdaA64D48F5": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdaInvocationRuleAllowEventRulePipelineStackBetaStageAPPWebHealthLambdaA64D48F596A7210A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmNotifications/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmNotificationsA4AFC78C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmNotifications/22195904@student.westernsydney.edu.au": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "topic": "*",
+        "endpoint": "*",
+        "protocol": "email",
+        "filterPolicy": "*",
+        "filterPolicyWithMessageBody": "*",
+        "deadLetterQueue": "*"
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm0/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteAvailabilityAlarm0B912A42E"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm0/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteLatencyAlarm061BC6D16"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm0/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteHttpStatusAlarm080F12085"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm1/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteAvailabilityAlarm1C4CB340E"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm1/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteLatencyAlarm11ED5F300"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm1/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteHttpStatusAlarm104ED7C93"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteAvailabilityAlarm2/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteAvailabilityAlarm28CCAFFD5"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteLatencyAlarm2/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteLatencyAlarm220A8E04A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebsiteHttpStatusAlarm2/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebsiteHttpStatusAlarm2153CDD4D"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthDashboard/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthDashboardA3196F59"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthLambdaServiceRole76BAA822"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/ServiceRole/DefaultPolicy": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/Code/AssetBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthLambdaLogGroupA1BA5A7C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambdaServiceRole34E88555"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/ServiceRole/DefaultPolicy": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/Code/AssetBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambdaLogGroupFFF71FD7"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/AlarmNotifications/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambdaAlarmNotifications79F5B791"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmNotifications/22195904@student.westernsydney.edu.au/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmNotifications22195904studentwesternsydneyeduauA89C0CE0"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/WebHealthLambda/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebHealthLambdaServiceRoleDefaultPolicyF4A88053"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/PipelineStack/BetaStage/APP/AlarmLoggerLambda/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AlarmLoggerLambdaServiceRoleDefaultPolicy0DCA4EA0"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ]
+}
