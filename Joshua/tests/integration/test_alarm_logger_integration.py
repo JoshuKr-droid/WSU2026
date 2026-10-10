@@ -1,38 +1,85 @@
 import importlib
 import json
-import sys
+import os
+import urllib.request
 from pathlib import Path
 
 import boto3
-from botocore.stub import Stubber
+import pytest
 
 
 RESOURCE_DIR = Path(__file__).resolve().parents[2] / "joshua" / "resources"
+LOCALSTACK_URL = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
+AWS_REGION = "ap-southeast-2"
+AWS_ACCESS_KEY_ID = "test"
+AWS_SECRET_ACCESS_KEY = "test"
+TABLE_NAME = "TestAlarmLogTable"
+
+
+def _require_localstack():
+    """These tests must hit a real AWS-compatible service endpoint, not a stubbed SDK client."""
+    try:
+        with urllib.request.urlopen(f"{LOCALSTACK_URL}/_localstack/health", timeout=3) as response:
+            if response.status != 200:
+                raise RuntimeError(f"LocalStack health check returned {response.status}")
+    except Exception as exc:  # pragma: no cover - the suite should skip when LocalStack is not running
+        pytest.skip(f"LocalStack is not running at {LOCALSTACK_URL}: {exc}")
+
+
+def _aws_client(service_name):
+    """Create a boto3 client pointed at LocalStack to preserve real service integration."""
+    return boto3.client(
+        service_name,
+        region_name=AWS_REGION,
+        endpoint_url=LOCALSTACK_URL,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+
+
+def _aws_resource(service_name):
+    """Create a boto3 resource pointed at LocalStack for a real DynamoDB table write/read cycle."""
+    return boto3.resource(
+        service_name,
+        region_name=AWS_REGION,
+        endpoint_url=LOCALSTACK_URL,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
 
 
 def test_alarm_notification_is_written_to_dynamodb(monkeypatch):
-    # Provide dummy credentials and a region for local testing.
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
-    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
-    monkeypatch.setenv("AWS_DEFAULT_REGION", "ap-southeast-2")
-    monkeypatch.setenv("ALARM_LOG_TABLE", "TestAlarmLogTable")
+    # This is a true service-level integration test: the Lambda writes to a real DynamoDB table.
+    # We intentionally skip it when LocalStack is not available so the suite stays reliable in CI.
+    _require_localstack()
+
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID)
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY)
+    monkeypatch.setenv("AWS_DEFAULT_REGION", AWS_REGION)
+    monkeypatch.setenv("ALARM_LOG_TABLE", TABLE_NAME)
 
     monkeypatch.syspath_prepend(str(RESOURCE_DIR))
     importlib.invalidate_caches()
 
-    # Create a real DynamoDB resource with a stubbed API client.
-    dynamodb = boto3.resource("dynamodb", region_name="ap-southeast-2")
-    stubber = Stubber(dynamodb.meta.client)
+    # Create the real DynamoDB table before the Lambda executes.
+    client = _aws_client("dynamodb")
+    client.create_table(
+        TableName=TABLE_NAME,
+        KeySchema=[{"AttributeName": "alarm_name", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "alarm_name", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    client.get_waiter("table_exists").wait(TableName=TABLE_NAME)
 
-    # Ensure the Lambda module uses our resource.
+    # Point the application to LocalStack instead of the live AWS endpoint.
     monkeypatch.setattr(
         boto3,
         "resource",
-        lambda service_name, **kwargs: dynamodb,
+        lambda service_name, **kwargs: _aws_resource(service_name),
     )
 
-    # Import after setting the environment variable because the table
-    # is created when alarmlogger.py is imported.
+    # Import the Lambda after setting the environment so the module-level table binding is created
+    # against the correct LocalStack-backed DynamoDB resource.
     alarmlogger = importlib.import_module("alarm_logger")
     alarmlogger = importlib.reload(alarmlogger)
 
@@ -44,41 +91,22 @@ def test_alarm_notification_is_written_to_dynamodb(monkeypatch):
         "Region": "ap-southeast-2",
         "AWSAccountId": "123456789012",
     }
-
     raw_message = json.dumps(message)
 
     event = {
         "Records": [
-            {
-                "Sns": {
-                    "Message": raw_message,
-                }
-            }
+            {"Sns": {"Message": raw_message}}
         ]
     }
 
-    # DynamoDB's low-level API expects AttributeValue structures.
-    expected_item = {
-        "alarm_name": message["AlarmName"],
-        "state_change_time": message["StateChangeTime"],
-        "new_state": message["NewStateValue"],
-        "reason": message["NewStateReason"],
-        "region": message["Region"],
-        "account_id": message["AWSAccountId"],
-        "raw_message": raw_message,
-    }
+    result = alarmlogger.lambda_handler(event, None)
 
-    stubber.add_response(
-        "put_item",
-        {},
-        {
-            "TableName": "TestAlarmLogTable",
-            "Item": expected_item,
-        },
-    )
-
-    with stubber:
-        result = alarmlogger.lambda_handler(event, None)
-        stubber.assert_no_pending_responses()
+    # Read the persisted item back from the real DynamoDB table to confirm the write really happened.
+    table = _aws_resource("dynamodb").Table(TABLE_NAME)
+    stored = table.get_item(Key={"alarm_name": message["AlarmName"]})
 
     assert result == {"body": "Alarm notification logged"}
+    assert stored["Item"]["alarm_name"] == "WebsiteAvailabilityAlarm0"
+    assert stored["Item"]["new_state"] == "ALARM"
+    assert stored["Item"]["reason"] == "Website availability dropped below threshold"
+    assert stored["Item"]["raw_message"] == raw_message
