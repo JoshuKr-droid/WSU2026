@@ -297,13 +297,13 @@ class JoshuaStack(Stack):
 
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_codedeploy/LambdaDeploymentGroup.html
         # 3. Create CodeDeploy Deployment Group tied to these specific crawler alarms
-        deployment_group = codedeploy.LambdaDeploymentGroup(
-            self,
-            "DeploymentGroup",
-            alias=alias,
-            deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10_PERCENT_5_MINUTES, # <--- Updated
-            alarms=[crawler_error_alarm, crawler_duration_alarm],
-        )
+        # deployment_group = codedeploy.LambdaDeploymentGroup(
+        #     self,
+        #     "DeploymentGroup",
+        #     alias=alias,
+        #     deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10_PERCENT_5_MINUTES, # <--- Updated
+        #     alarms=[crawler_error_alarm, crawler_duration_alarm],
+        # )
         # ==========================================
 
 
