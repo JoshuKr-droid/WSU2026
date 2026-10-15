@@ -268,6 +268,12 @@ class JoshuaStack(Stack):
             statistic="Average"
         )
 
+        # Track how many times the crawler runs
+        crawler_invocations_metric = fn.metric_invocations(
+            period=Duration.minutes(5),
+            statistic="Sum"
+        )
+
         # 2. Create alarms for these metrics
         crawler_error_alarm = cloudwatch.Alarm(
             self,
@@ -333,6 +339,13 @@ class JoshuaStack(Stack):
             cloudwatch.GraphWidget(
                 title="HTTP Status Codes",
                 left=http_status_code_metrics,
+            ),
+
+            # New widget for Lambda Operational Health
+            cloudwatch.GraphWidget(
+                title="Crawler Operational Health (Invocations & Errors)",
+                left=[crawler_invocations_metric],
+                right=[crawler_errors_metric],
             ),
         )
 

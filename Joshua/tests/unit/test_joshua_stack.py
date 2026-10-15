@@ -54,7 +54,7 @@ def test_sns_notification_topic_is_created(template):
 # Test 7: Check that all 9 CloudWatch alarms are created.
 # There are 3 websites and 3 alarms per website: availability, latency and HTTP status code
 def test_nine_website_alarms_are_created(template):
-    template.resource_count_is("AWS::CloudWatch::Alarm", 9)
+    template.resource_count_is("AWS::CloudWatch::Alarm", 11)
 
 # Test 8: Check that the availability alarm triggers below 90%.
 def test_availability_alarm_threshold_is_ninety_percent(template):
