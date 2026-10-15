@@ -301,8 +301,8 @@ class JoshuaStack(Stack):
             self,
             "DeploymentGroup",
             alias=alias,
-            deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10PERCENT_5MINUTES,
-            alarms=[crawler_error_alarm, crawler_duration_alarm], # Automatically rolls back on failure!
+            deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10_PERCENT_5_MINUTES, # <--- Updated
+            alarms=[crawler_error_alarm, crawler_duration_alarm],
         )
         # ==========================================
 
