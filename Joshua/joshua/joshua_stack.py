@@ -7,6 +7,7 @@ from aws_cdk import (
     Stack,
     aws_cloudwatch as cloudwatch,
     aws_cloudwatch_actions as cloudwatch_actions,
+    aws_codedeploy as codedeploy,
     aws_events as events,
     aws_events_targets as targets,
     aws_iam as iam,
@@ -43,6 +44,16 @@ class JoshuaStack(Stack):
             code=lambda_.Code.from_asset("joshua/resources"),
             # lambda runs for a max of 30 seconds before timing out
             timeout=Duration.seconds(30),
+        )
+
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_lambda/Alias.html
+        # Creates an alias for the lambda function. This allows us to have multiple versions of the lambda function and switch between them easily.
+        version = fn.current_version
+        alias = lambda_.Alias(
+            self,
+            "WebHealthLambdaAlias",
+            alias_name="Live",
+            version=version,
         )
 
         # Destruction policy for the lambda function. If the stack is deleted, the lambda function will be deleted as well.
@@ -240,6 +251,60 @@ class JoshuaStack(Stack):
             # When the alarm is triggered, the SNS topic will be notified.
             # This sends an email and invokes the alarm logger Lambda.
             httpStatusAlarm.add_alarm_action(alarm_action)
+
+
+        # ==========================================
+        # WEEK 11: Crawler Operational Alarms & Rollback Setup
+        # ==========================================
+
+        # 1. Define operational metrics for your web crawler Lambda function
+        crawler_errors_metric = fn.metric_errors(
+            period=Duration.minutes(1),
+            statistic="Sum"
+        )
+        
+        crawler_duration_metric = fn.metric_duration(
+            period=Duration.minutes(1),
+            statistic="Average"
+        )
+
+        # 2. Create alarms for these metrics
+        crawler_error_alarm = cloudwatch.Alarm(
+            self,
+            "CrawlerErrorAlarm",
+            metric=crawler_errors_metric,
+            threshold=1,  # Triggers if there is 1 or more errors during deployment
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+            alarm_description="Rollback trigger: Crawler threw an error.",
+        )
+        crawler_error_alarm.apply_removal_policy(RemovalPolicy.DESTROY)
+        crawler_error_alarm.add_alarm_action(alarm_action)
+
+        crawler_duration_alarm = cloudwatch.Alarm(
+            self,
+            "CrawlerDurationAlarm",
+            metric=crawler_duration_metric,
+            threshold=25,  # Triggers if processing time exceeds 25 seconds
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+            alarm_description="Rollback trigger: Crawler processing time too high.",
+        )
+        crawler_duration_alarm.apply_removal_policy(RemovalPolicy.DESTROY)
+        crawler_duration_alarm.add_alarm_action(alarm_action)
+
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_codedeploy/LambdaDeploymentGroup.html
+        # 3. Create CodeDeploy Deployment Group tied to these specific crawler alarms
+        deployment_group = codedeploy.LambdaDeploymentGroup(
+            self,
+            "DeploymentGroup",
+            alias=alias,
+            deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10PERCENT_5MINUTES,
+            alarms=[crawler_error_alarm, crawler_duration_alarm], # Automatically rolls back on failure!
+        )
+        # ==========================================
 
 
         # CloudWatch dashboard for website health monitoring
