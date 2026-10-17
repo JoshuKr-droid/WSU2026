@@ -16,7 +16,7 @@ def template():
 
 # Test 1: Check that all Lambda functions are created (Web health, alarm logger, and rollback handler).
 def test_lambd_functions_are_created(template):
-    template.resource_count_is("AWS::Lambda::Function", 3)
+    template.resource_count_is("AWS::Lambda::Function", 4)
 
 # Test 2: Check that the web health Lambda uses the correct handler.
 def test_web_health_lambda_handler(template):
@@ -42,7 +42,7 @@ def test_schedule_runs_every_five_minutes(template):
 
 # Test 5: Check that the DynamoDB tables for alarm logging and rollback history are created
 def test_dynamodb_tables_are_created(template):
-    template.resource_count_is("AWS::DynamoDB::Table", 2)
+    template.resource_count_is("AWS::DynamoDB::Table", 3)
 
 # Test 6: Check that the SNS topic used for alarm notifications is created.
 def test_sns_notification_topic_is_created(template):

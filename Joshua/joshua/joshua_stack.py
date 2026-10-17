@@ -403,3 +403,74 @@ class JoshuaStack(Stack):
         # Logging alarm information in DynamoDB database
 
         # Create dynamoDB, but pass it into the lambda function so it can write into the database?
+
+############################## APPLIED PROJECT #####################################
+
+# https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway-tutorial.html 
+
+#Build a public CRUD API Gateway endpoint for the web crawler to create/read/update/delete the target list containing the list of websites/webpages to crawl. First, place the target list in the database (DynamoDB). Then implement CRUD REST commands on DynamoDB entries. 
+
+
+#Extend tests in each stage to cover the CRUD operations and DynamoDB read/write time.
+
+#2 unit tests
+#1 functional test
+#1 integration test
+
+
+# User interacts with the web crawler app using API gateway 
+
+
+# Write API documentation and commit to github.
+
+
+# Manage README files in markdown on GitHub.
+
+# DynamoDB table to store web crawler targets
+        crawler_targets_table = dynamodb.Table(
+            self,
+            "CrawlerTargetsTable",
+            partition_key=dynamodb.Attribute(
+                name="target_id", # partition key for the table
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+# Lambda function for handling CRUD business logic
+        crawler_crud_lambda = lambda_.Function(
+            self,
+            "CrawlerCrudLambda",
+            runtime=lambda_.Runtime.PYTHON_3_14,
+            handler="crawler_crud.lambda_handler",
+            code=lambda_.Code.from_asset("joshua/resources"),
+            environment={"CRAWLER_TARGETS_TABLE": crawler_targets_table.table_name},
+        )
+
+        # Grant Lambda read/write permissions to DynamoDB
+        crawler_targets_table.grant_read_write_data(crawler_crud_lambda)
+
+        # API Gateway REST API setup
+        from aws_cdk import aws_apigateway as apigw
+
+        api = apigw.RestApi(
+            self,
+            "CrawlerApi",
+            rest_api_name="Web Crawler CRUD Service",
+            deploy_options=apigw.StageOptions(stage_name="prod"),
+        )
+
+        # Root resource /targets
+        targets_resource = api.root.add_resource("targets")
+        targets_integration = apigw.LambdaIntegration(crawler_crud_lambda)
+
+        # Add methods to /targets
+        targets_resource.add_method("GET", targets_integration)   # List all
+        targets_resource.add_method("POST", targets_integration)  # Create
+
+        # Resource for specific item /targets/{target_id}
+        single_target_resource = targets_resource.add_resource("{target_id}")
+        single_target_resource.add_method("GET", targets_integration)    # Read one
+        single_target_resource.add_method("PUT", targets_integration)    # Update
+        single_target_resource.add_method("DELETE", targets_integration) # Delete
