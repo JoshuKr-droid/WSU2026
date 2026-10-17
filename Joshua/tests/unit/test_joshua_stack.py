@@ -8,18 +8,15 @@ import pytest
 from joshua.joshua_stack import JoshuaStack
 
 # Fixture used to create the CDK stack for each test.
-# This lets me reuse the CloudFormation template in all tests.
 @pytest.fixture
 def template():
     app = core.App()
     stack = JoshuaStack(app, "joshua")
-    # Converts the CDK stack into a template so we can
-    # check the AWS resources without deploying them.
     return assertions.Template.from_stack(stack)
 
-# Test 1: Check that both Lambda functions are created. One Lambda checks website health and the other logs alarms.
+# Test 1: Check that all Lambda functions are created (Web health, alarm logger, and rollback handler).
 def test_lambd_functions_are_created(template):
-    template.resource_count_is("AWS::Lambda::Function", 2)
+    template.resource_count_is("AWS::Lambda::Function", 3)
 
 # Test 2: Check that the web health Lambda uses the correct handler.
 def test_web_health_lambda_handler(template):
@@ -43,17 +40,16 @@ def test_schedule_runs_every_five_minutes(template):
         },
     )
 
-# Test 5: Check that the DynamoDB table for alarm logging is created
-def test_alarm_logging_dynamodb_table_is_created(template):
-    template.resource_count_is("AWS::DynamoDB::Table", 1)
+# Test 5: Check that the DynamoDB tables for alarm logging and rollback history are created
+def test_dynamodb_tables_are_created(template):
+    template.resource_count_is("AWS::DynamoDB::Table", 2)
 
 # Test 6: Check that the SNS topic used for alarm notifications is created.
 def test_sns_notification_topic_is_created(template):
     template.resource_count_is("AWS::SNS::Topic", 1)
 
-# Test 7: Check that all 9 CloudWatch alarms are created.
-# There are 3 websites and 3 alarms per website: availability, latency and HTTP status code
-def test_nine_website_alarms_are_created(template):
+# Test 7: Check that all 11 CloudWatch alarms are created (9 website alarms + 2 crawler operational alarms).
+def test_eleven_alarms_are_created(template):
     template.resource_count_is("AWS::CloudWatch::Alarm", 11)
 
 # Test 8: Check that the availability alarm triggers below 90%.

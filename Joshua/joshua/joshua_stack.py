@@ -97,6 +97,50 @@ class JoshuaStack(Stack):
         # Gives your Lambda permission to write items into the table.
         alarm_log_table.grant_write_data(alarm_logger)
 
+        # ==========================================
+        # WEEK 11: Custom Rollback Infrastructure (Replaces CodeDeploy)
+        # ==========================================
+        
+        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_dynamodb/Table.html
+        rollback_history_table = dynamodb.Table(
+            self,
+            "RollbackHistoryTable",
+            partition_key=dynamodb.Attribute(
+                name="rollback_id",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+        # Lambda function to handle automated rollbacks when CloudWatch alarms trigger
+        rollback_logger = lambda_.Function(
+            self,
+            "RollbackHandlerLambda",
+            runtime=lambda_.Runtime.PYTHON_3_14,
+            handler="rollback_handler.lambda_handler",
+            code=lambda_.Code.from_asset("joshua/resources"),
+            environment={
+                "ROLLBACK_HISTORY_TABLE": rollback_history_table.table_name,
+                "FUNCTION_NAME": fn.function_name,
+                "ALIAS_NAME": alias.alias_name,
+            },
+        )
+
+        # Grants the rollback lambda permissions to read/write history and manage function versions/aliases
+        rollback_history_table.grant_read_write_data(rollback_logger)
+        rollback_logger.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "lambda:ListVersionsByFunction",
+                    "lambda:GetAlias",
+                    "lambda:UpdateAlias",
+                ],
+                resources=[fn.function_arn, f"{fn.function_arn}:*"],
+            )
+        )
+        # ==========================================
+
         # Invokes lambda function every x minutes
         rule = events.Rule(
             self,
@@ -177,6 +221,11 @@ class JoshuaStack(Stack):
         # When an alarm is triggered, the lambda function will be invoked. This can be used to perform any additional actions when an alarm is triggered.
         topic.add_subscription(
             subscriptions.LambdaSubscription(alarm_logger)
+        )
+
+        # Subscribe our custom rollback handler to the SNS topic so alarms trigger automated rollbacks
+        topic.add_subscription(
+            subscriptions.LambdaSubscription(rollback_logger)
         )
 
         alarm_action = cloudwatch_actions.SnsAction(topic)
