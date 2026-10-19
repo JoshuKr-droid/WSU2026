@@ -33,7 +33,14 @@ def lambda_handler(event, context):
             if not target_id or not url:
                 return {"statusCode": 400, "body": json.dumps({"error": "target_id and url are required"})}
             
-            table.put_item(Item={"target_id": target_id, "url": url, "status": "active"})
+            table.put_item(
+                Item={
+                    "target_id": target_id,
+                    "url": url,
+                    "status": "active",
+                },
+                ConditionExpression="attribute_not_exists(target_id)",
+            )
             return {"statusCode": 201, "body": json.dumps({"message": "Target created successfully", "target_id": target_id})}
 
         elif http_method == "PUT":
@@ -46,6 +53,7 @@ def lambda_handler(event, context):
             table.update_item(
                 Key={"target_id": target_id},
                 UpdateExpression="SET #s = :status",
+                ConditionExpression="attribute_exists(target_id)",
                 ExpressionAttributeNames={"#s": "status"},
                 ExpressionAttributeValues={":status": status},
             )
