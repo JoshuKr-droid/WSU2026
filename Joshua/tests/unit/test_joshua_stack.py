@@ -103,6 +103,23 @@ def test_invocation_alarm_detects_ten_minutes_without_invocations(template):
         },
     )
 
+    # Infrastructure Unit Test 14: Lambda duration is measured in milliseconds,
+    # so the 25-second threshold must be represented as 25,000.
+def test_duration_alarm_threshold_is_twenty_five_seconds(template):
+    template.has_resource_properties(
+        "AWS::CloudWatch::Alarm",
+        {
+            "AlarmDescription": "Rollback trigger: Crawler processing time too high.",
+            "MetricName": "Duration",
+            "Threshold": 25_000,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "EvaluationPeriods": 1,
+            "Period": 60,
+            "Statistic": "Average",
+        },
+    )
+
+
 # Infrastructure Unit Test 10: the availability threshold is 90 percent.
 def test_availability_alarm_threshold_is_ninety_percent(template):
     template.has_resource_properties(

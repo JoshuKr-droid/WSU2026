@@ -154,7 +154,7 @@ Each alarm is connected to the SNS topic, which sends notifications.
 ### Lambda Operational Alarms
 
 - `CrawlerErrorAlarm` triggers when the aliased Lambda reports an error.
-- `CrawlerDurationAlarm` triggers when average duration exceeds 25 seconds.
+- `CrawlerDurationAlarm` triggers when average duration exceeds 25 seconds (25,000 milliseconds, the unit of Lambda's built-in `Duration` metric).
 - `CrawlerInvocationsAlarm` triggers after two consecutive five-minute periods with fewer than one invocation, including missing data.
 
 All three operational alarms notify the rollback handler. The handler updates the `Live` alias to the highest published version below its current version and records the result in `RollbackHistoryTable`. This is a custom alias-based rollback; it does not use CodeDeploy.
@@ -175,14 +175,14 @@ Target-table reads and writes are timed with a monotonic clock and published to 
 
 ### Applied Project tests
 
-The test suite has **42 collected tests**. Counts below group each test by its primary purpose, so one test is counted only once:
+The test suite has **43 collected tests**. Counts below group each test by its primary purpose, so one test is counted only once:
 
 | Pipeline stage | Tests | Applied Project | Website monitoring / infrastructure |
 |---|---:|---:|---:|
-| Alpha unit tests | 22 | 5 | 17 |
+| Alpha unit tests | 23 | 5 | 18 |
 | Beta functional tests | 16 | 7 | 9 |
 | Gamma integration tests | 4 | 3 | 1 |
-| **Total** | **42** | **15** | **27** |
+| **Total** | **43** | **15** | **28** |
 
 Applied Project tests include the five explicitly numbered CRUD/latency unit tests, three API CRUD handler tests, four target-table/crawler functional tests, and three integration tests: DynamoDB CRUD/latency, CloudWatch metric publication for a managed target, and crawler behavior for active versus paused DynamoDB targets. The other tests cover the CDK infrastructure, rollback behavior, website HTTP metrics, and alarm logging. Within each test file, test comments identify the test's purpose and number where useful.
 

@@ -378,7 +378,7 @@ class JoshuaStack(Stack):
             self,
             "CrawlerDurationAlarm",
             metric=crawler_duration_metric,
-            threshold=25,  # Triggers if processing time exceeds 25 seconds
+            threshold=25_000,  # Lambda Duration is reported in milliseconds.
             evaluation_periods=1,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
