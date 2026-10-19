@@ -21,6 +21,7 @@ def load_active_targets():
             last_evaluated_key = response.get("LastEvaluatedKey")
             if not last_evaluated_key:
                 return items
+            # DynamoDB Scan returns one page at a time; continue until all targets are read.
             scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
 
     items = measure_dynamodb_operation(
@@ -34,7 +35,7 @@ def load_active_targets():
         if item.get("status") == "active" and isinstance(item.get("url"), str)
     ]
 
-# Define metrics for a web URL. You will obtain and publish these metrics.
+
 def lambda_handler(event, context):
     print(event)
 
@@ -63,6 +64,8 @@ def lambda_handler(event, context):
             latency = time.monotonic() - start_time
 
         except HTTPError as error:
+            # urllib raises HTTPError for 4xx/5xx, but it still carries a valid
+            # response code and elapsed request time that should be measured.
             status_code = error.code
             latency = time.monotonic() - start_time
             error.close()

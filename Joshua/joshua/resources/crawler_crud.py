@@ -89,6 +89,7 @@ def _scan_all_targets():
         last_evaluated_key = response.get("LastEvaluatedKey")
         if not last_evaluated_key:
             return items
+        # DynamoDB Scan is paginated; retain the cursor to return every target.
         scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
 
 
@@ -129,6 +130,7 @@ def lambda_handler(event, context):
                 "Write",
                 lambda: table.put_item(
                     Item={"target_id": target_id, "url": url, "status": "active"},
+                    # Prevent a repeated ID from silently replacing an existing target.
                     ConditionExpression="attribute_not_exists(target_id)",
                 ),
             )
@@ -183,6 +185,7 @@ def lambda_handler(event, context):
                 lambda: table.update_item(
                     Key={"target_id": target_id},
                     UpdateExpression=update_expression,
+                    # Avoid DynamoDB creating a partial item for an unknown ID.
                     ConditionExpression="attribute_exists(target_id)",
                     ExpressionAttributeNames=expression_names,
                     ExpressionAttributeValues=expression_values,
@@ -201,6 +204,7 @@ def lambda_handler(event, context):
                 "Write",
                 lambda: table.delete_item(
                     Key={"target_id": target_id},
+                    # Return 404 rather than treating a missing target as deleted.
                     ConditionExpression="attribute_exists(target_id)",
                     ReturnValues="ALL_OLD",
                 ),

@@ -570,3 +570,9 @@ class JoshuaStack(Stack):
         single_target_resource.add_method("GET", targets_integration)    # Read one
         single_target_resource.add_method("PUT", targets_integration)    # Update
         single_target_resource.add_method("DELETE", targets_integration) # Delete
+        CfnOutput(
+            self,
+            "CrawlerApiUrl",
+            value=api.url,
+            description="Base URL for the public crawler targets REST API.",
+        )

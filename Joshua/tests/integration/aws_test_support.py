@@ -17,6 +17,7 @@ _boto3_resource = boto3.resource
 
 def require_integration_environment(*required_variables):
     if RUN_AWS_INTEGRATION_TESTS:
+        # Pipeline mode is strict: missing deployed table outputs must fail, not skip.
         missing = [
             name for name in required_variables if not os.getenv(name)
         ]

@@ -19,6 +19,7 @@ def webhealth(monkeypatch):
     return module, metrics
 
 
+# Applied Project Functional Test 4: target scans paginate and record read latency.
 def test_load_active_targets_reads_all_pages_and_records_read_latency(
     webhealth,
 ):
@@ -70,6 +71,7 @@ def test_load_active_targets_reads_all_pages_and_records_read_latency(
     assert metric_data["MetricData"][0]["Value"] >= 0
 
 
+# Applied Project Functional Test 5: crawler checks active database-managed targets.
 def test_webhealth_checks_only_database_targets(webhealth, monkeypatch):
     module, _ = webhealth
     targets = ["https://configured.example/path"]
@@ -97,6 +99,7 @@ def test_webhealth_checks_only_database_targets(webhealth, monkeypatch):
     assert {metric[1] for metric in published_metrics} == set(targets)
 
 
+# Applied Project Functional Test 6: an empty table does not use a fixed URL list.
 def test_empty_target_table_does_not_request_hard_coded_sites(webhealth, monkeypatch):
     module, _ = webhealth
     monkeypatch.setattr(module, "load_active_targets", lambda: [])
@@ -112,6 +115,7 @@ def test_empty_target_table_does_not_request_hard_coded_sites(webhealth, monkeyp
     metric_publisher.assert_not_called()
 
 
+# Applied Project Functional Test 7: target creation emits write-latency metrics.
 def test_target_creation_publishes_dynamodb_write_latency(
     webhealth, monkeypatch
 ):

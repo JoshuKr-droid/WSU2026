@@ -33,6 +33,7 @@ def measure_dynamodb_operation(
                 ],
             )
         except Exception:
+            # Metric delivery must not replace the DynamoDB result or exception.
             logger.exception(
                 "Could not publish DynamoDB %s latency for %s.",
                 access_type.lower(),

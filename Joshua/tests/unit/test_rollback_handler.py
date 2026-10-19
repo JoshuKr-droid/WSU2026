@@ -47,6 +47,7 @@ def sns_event(
     }
 
 
+# Rollback Unit Test 1: an operational alarm moves Live to the previous published version.
 def test_alarm_rolls_live_alias_back_to_previous_published_version(rollback_handler):
     rollback_handler.lambda_client.get_alias.return_value = {
         "FunctionVersion": "7",
@@ -73,6 +74,7 @@ def test_alarm_rolls_live_alias_back_to_previous_published_version(rollback_hand
     assert rollback_handler.rollback_history.put_item.call_count == 2
 
 
+# Rollback Unit Test 2: website and non-ALARM notifications do not roll back.
 def test_non_operational_or_non_alarm_notifications_are_ignored(rollback_handler):
     result = rollback_handler.lambda_handler(
         sns_event(
@@ -89,6 +91,7 @@ def test_non_operational_or_non_alarm_notifications_are_ignored(rollback_handler
     rollback_handler.lambda_client.get_alias.assert_not_called()
 
 
+# Rollback Unit Test 3: duplicate processing is idempotently rejected.
 def test_duplicate_alarm_state_change_does_not_roll_back_twice(rollback_handler):
     rollback_handler.lambda_client.get_alias.return_value = {
         "FunctionVersion": "7",
@@ -110,6 +113,7 @@ def test_duplicate_alarm_state_change_does_not_roll_back_twice(rollback_handler)
     rollback_handler.lambda_client.get_alias.assert_called_once()
 
 
+# Rollback Unit Test 4: absence of an earlier published version is explicit.
 def test_rollback_fails_explicitly_when_no_previous_version_exists(rollback_handler):
     rollback_handler.lambda_client.get_alias.return_value = {
         "FunctionVersion": "1",

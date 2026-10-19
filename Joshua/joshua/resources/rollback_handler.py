@@ -33,6 +33,7 @@ def _previous_version(current_version):
         if not marker:
             break
 
+    # Use the newest published version strictly older than the aliased version.
     if not versions:
         raise RuntimeError(
             f"No published Lambda version exists before version {current}."
@@ -60,6 +61,8 @@ def _rollback_alarm(message):
     )
     current_version = alias["FunctionVersion"]
     try:
+        # A conditional write prevents duplicate alarm deliveries from rolling
+        # the same alias back more than once for its current version.
         rollback_history.put_item(
             Item={
                 "rollback_id": alias_lock_id,

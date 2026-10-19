@@ -16,11 +16,11 @@ def template():
     stack = JoshuaStack(app, "joshua")
     return assertions.Template.from_stack(stack)
 
-# Test 1: Check that all Lambda functions are created (Web health, alarm logger, and rollback handler).
+# Infrastructure Unit Test 1: all four Lambda functions are synthesized.
 def test_lambd_functions_are_created(template):
     template.resource_count_is("AWS::Lambda::Function", 4)
 
-# Test 2: Check that the web health Lambda uses the correct handler.
+# Infrastructure Unit Test 2: the website monitor uses its expected entry point.
 def test_web_health_lambda_handler(template):
     template.has_resource_properties(
         "AWS::Lambda::Function",
@@ -29,11 +29,11 @@ def test_web_health_lambda_handler(template):
         },
     )
 
-# Test 3: Check that an EventBridge rule is created to trigger the web health Lambda.
+# Infrastructure Unit Test 3: a scheduled EventBridge rule is synthesized.
 def test_eventbridge_schedule_is_created(template):
     template.resource_count_is("AWS::Events::Rule", 1)
 
-# Test 4: Check that the Lambda is scheduled to run every 5 minutes
+# Infrastructure Unit Test 4: the monitor schedule is every five minutes.
 def test_schedule_runs_every_five_minutes(template):
     template.has_resource_properties(
         "AWS::Events::Rule",
@@ -43,6 +43,7 @@ def test_schedule_runs_every_five_minutes(template):
     )
 
 
+# Infrastructure Unit Test 5: scheduled invocations target the rollback-capable alias.
 def test_schedule_invokes_live_alias(template):
     resources = template.to_json()["Resources"]
     alias_logical_id = next(
@@ -60,19 +61,20 @@ def test_schedule_invokes_live_alias(template):
     assert alias_logical_id in json.dumps(rule["Properties"]["Targets"])
 
 
-# Test 5: Check that the DynamoDB tables for alarm logging and rollback history are created
+# Infrastructure Unit Test 6: target, alarm, and rollback history tables exist.
 def test_dynamodb_tables_are_created(template):
     template.resource_count_is("AWS::DynamoDB::Table", 3)
 
-# Test 6: Check that the SNS topic used for alarm notifications is created.
+# Infrastructure Unit Test 7: the alarm notification SNS topic is created.
 def test_sns_notification_topic_is_created(template):
     template.resource_count_is("AWS::SNS::Topic", 1)
 
-# Test 7: Check that all 12 CloudWatch alarms are created (9 website alarms + 3 crawler operational alarms).
+# Infrastructure Unit Test 8: nine website alarms and three Lambda alarms exist.
 def test_twelve_alarms_are_created(template):
     template.resource_count_is("AWS::CloudWatch::Alarm", 12)
 
 
+# Infrastructure Unit Test 9: missing invocations are treated as an alarm.
 def test_invocation_alarm_detects_ten_minutes_without_invocations(template):
     template.has_resource_properties(
         "AWS::CloudWatch::Alarm",
@@ -89,7 +91,7 @@ def test_invocation_alarm_detects_ten_minutes_without_invocations(template):
         },
     )
 
-# Test 8: Check that the availability alarm triggers below 90%.
+# Infrastructure Unit Test 10: the availability threshold is 90 percent.
 def test_availability_alarm_threshold_is_ninety_percent(template):
     template.has_resource_properties(
         "AWS::CloudWatch::Alarm",
@@ -99,7 +101,7 @@ def test_availability_alarm_threshold_is_ninety_percent(template):
         },
     )
 
-# Test 9: Check that the latency alarm triggers above 2 seconds.
+# Infrastructure Unit Test 11: the website latency threshold is two seconds.
 def test_latency_alarm_threshold_is_two_seconds(template):
     template.has_resource_properties(
         "AWS::CloudWatch::Alarm",
@@ -109,6 +111,16 @@ def test_latency_alarm_threshold_is_two_seconds(template):
         },
     )
 
-# Test 10: Check that the CloudWatch monitoring dashboard is created
+# Infrastructure Unit Test 12: the CloudWatch monitoring dashboard exists.
 def test_cloudwatch_dashboard_is_created(template):
     template.resource_count_is("AWS::CloudWatch::Dashboard", 1)
+
+
+# Infrastructure Unit Test 13: deployment exposes the API base URL for clients.
+def test_crawler_api_url_is_a_stack_output(template):
+    template.has_output(
+        "CrawlerApiUrl",
+        {
+            "Description": "Base URL for the public crawler targets REST API.",
+        },
+    )

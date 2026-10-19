@@ -190,6 +190,8 @@ def test_http_request_failure_publishes_zero_metrics(
     ]
 
 
+# Monitoring Functional Test 8: HTTPError responses retain their real code
+# and request latency rather than being reported as a transport failure.
 def test_http_error_preserves_status_code_and_latency(
     webhealth, published_metrics, monkeypatch
 ):
@@ -224,7 +226,7 @@ def test_http_error_preserves_status_code_and_latency(
     ]
 
 
-# Test 8: Check that all three websites are processed and all three metrics are published for each website.
+# Monitoring Functional Test 9: every configured website publishes each metric.
 def test_all_three_websites_publish_each_metric(
     webhealth, published_metrics, monkeypatch
 ):
