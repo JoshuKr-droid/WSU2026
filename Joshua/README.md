@@ -168,7 +168,7 @@ Target-table reads and writes are timed with a monotonic clock and published to 
 
 ### Applied Project tests
 
-The Alpha unit-test stage includes five numbered Applied Project unit tests: two verify read/write latency metrics, and three check malformed input, duplicate target IDs, and invalid update status. The Beta functional-test stage includes three numbered API-handler tests covering create/read, update, and delete/not-found behavior against a stateful in-memory table. The Gamma integration-test stage includes one numbered CRUD lifecycle test against a real LocalStack DynamoDB table; it skips when LocalStack is not available and also verifies read/write latency metric emission.
+The Alpha unit-test stage includes five numbered Applied Project unit tests: two verify read/write latency metrics, and three check malformed input, duplicate target IDs, and invalid update status. The Beta functional-test stage includes three numbered API-handler tests covering create/read, update, and delete/not-found behavior against a stateful in-memory table. Gamma runs the integration suite in a CodeBuild step configured with the deployed Gamma DynamoDB table names and an IAM role that can access those tables and publish CloudWatch metrics. The integration suite uses unique test records and removes them afterward; in Gamma, a missing AWS integration configuration fails the tests instead of skipping them. For local development, set `AWS_ENDPOINT_URL` to a running LocalStack endpoint; the tests skip if neither LocalStack nor the configured Gamma AWS test environment is available.
 
 ## Crawler target API behavior
 

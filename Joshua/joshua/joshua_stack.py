@@ -43,6 +43,12 @@ class JoshuaStack(Stack):
             ),
             removal_policy=RemovalPolicy.RETAIN,
         )
+        self.crawler_targets_table = crawler_targets_table
+        self.crawler_targets_table_name_output = CfnOutput(
+            self,
+            "CrawlerTargetsTableName",
+            value=crawler_targets_table.table_name,
+        )
 
         # Creates lambda function and stores construct in variable fn
         fn = lambda_.Function(
@@ -107,6 +113,12 @@ class JoshuaStack(Stack):
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=RemovalPolicy.DESTROY,
+        )
+        self.alarm_log_table = alarm_log_table
+        self.alarm_log_table_name_output = CfnOutput(
+            self,
+            "AlarmLogTableName",
+            value=alarm_log_table.table_name,
         )
 
         # This passes the DynamoDB table name into the Lambda through an environment variable.

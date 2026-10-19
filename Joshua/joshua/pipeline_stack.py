@@ -1,4 +1,5 @@
 from aws_cdk import (
+    Aws,
     Stack,
     pipelines,
     SecretValue,
@@ -87,13 +88,48 @@ class PipelineStack(Stack):
         pipeline.add_stage(
             stage=Gamma,
             post=[
-                pipelines.ShellStep(
+                pipelines.CodeBuildStep(
                     id="IntegrationTests",
+                    install_commands=[
+                        "python -m pip install -r Joshua/requirements.txt",
+                        "python -m pip install pytest",
+                    ],
                     commands=[
                         "cd Joshua",
-                        "python -m pip install -r requirements.txt",
-                        "pip install pytest",
                         "python -m pytest tests/integration",
+                    ],
+                    env={
+                        "RUN_AWS_INTEGRATION_TESTS": "true",
+                        "AWS_DEFAULT_REGION": self.region,
+                    },
+                    env_from_cfn_outputs={
+                        "CRAWLER_TARGETS_TABLE": (
+                            Gamma.application_stack.crawler_targets_table_name_output
+                        ),
+                        "ALARM_LOG_TABLE": (
+                            Gamma.application_stack.alarm_log_table_name_output
+                        ),
+                    },
+                    role_policy_statements=[
+                        iam.PolicyStatement(
+                            actions=[
+                                "dynamodb:GetItem",
+                                "dynamodb:PutItem",
+                                "dynamodb:UpdateItem",
+                                "dynamodb:DeleteItem",
+                                "dynamodb:Scan",
+                            ],
+                            resources=[
+                                (
+                                    f"arn:{Aws.PARTITION}:dynamodb:{self.region}:"
+                                    f"{self.account}:table/*"
+                                ),
+                            ],
+                        ),
+                        iam.PolicyStatement(
+                            actions=["cloudwatch:PutMetricData"],
+                            resources=["*"],
+                        ),
                     ],
                 ),
                 pipelines.CodeBuildStep(

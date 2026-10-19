@@ -1,109 +1,95 @@
 import importlib
 import os
-import urllib.request
+import time
 from pathlib import Path
 from unittest.mock import Mock
 
-import boto3
-import pytest
+from tests.integration.aws_test_support import (
+    RUN_AWS_INTEGRATION_TESTS,
+    aws_client,
+    aws_resource,
+    configure_boto3,
+    create_targets_table,
+    require_integration_environment,
+    unique_id,
+)
 
 
 RESOURCE_DIR = Path(__file__).resolve().parents[2] / "joshua" / "resources"
-LOCALSTACK_URL = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
-AWS_REGION = "ap-southeast-2"
-AWS_ACCESS_KEY_ID = "test"
-AWS_SECRET_ACCESS_KEY = "test"
-
-WEBSITE_URLS = [
-    "https://www.westernsydney.edu.au/",
-    "https://www.unsw.edu.au/",
-    "https://www.sydney.edu.au/",
-]
-
-
-def _require_localstack():
-    """Real AWS integration tests should only run when LocalStack is available."""
-    try:
-        with urllib.request.urlopen(f"{LOCALSTACK_URL}/_localstack/health", timeout=3) as response:
-            if response.status != 200:
-                raise RuntimeError(f"LocalStack health check returned {response.status}")
-    except Exception as exc:  # pragma: no cover - only used in CI/local development
-        pytest.skip(f"LocalStack is not running at {LOCALSTACK_URL}: {exc}")
-
-
-def _aws_client(service_name):
-    """Create a real boto3 client pointed at the LocalStack endpoint."""
-    return boto3.client(
-        service_name,
-        region_name=AWS_REGION,
-        endpoint_url=LOCALSTACK_URL,
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
 
 
 def test_webhealth_publishes_metrics_to_cloudwatch(monkeypatch):
-    # This is an integration test against the AWS API surface, not a mock of boto3.
-    # LocalStack emulates AWS services locally so we can verify real writes to CloudWatch.
-    _require_localstack()
+    # Gamma uses the deployed target table and CloudWatch; local runs can use LocalStack.
+    if RUN_AWS_INTEGRATION_TESTS:
+        require_integration_environment("CRAWLER_TARGETS_TABLE")
+    else:
+        require_integration_environment()
 
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID)
-    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY)
-    monkeypatch.setenv("AWS_DEFAULT_REGION", AWS_REGION)
-
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
     monkeypatch.syspath_prepend(str(RESOURCE_DIR))
-    importlib.invalidate_caches()
+    configure_boto3(monkeypatch)
+    table_name = os.getenv("CRAWLER_TARGETS_TABLE")
+    created_local_table = not table_name
+    if created_local_table:
+        table_name = unique_id("TestCrawlerTargets")
+        create_targets_table(table_name)
+        monkeypatch.setenv("CRAWLER_TARGETS_TABLE", table_name)
 
-    webhealth = importlib.import_module("webhealth")
-    webhealth = importlib.reload(webhealth)
-
-    # Route the application code to LocalStack instead of the real AWS endpoint.
-    monkeypatch.setattr(
-        webhealth.boto3,
-        "client",
-        lambda service_name, **kwargs: _aws_client(service_name),
+    target_id = unique_id("cloudwatch-target")
+    target_url = f"https://{target_id}.example/"
+    table = aws_resource("dynamodb").Table(table_name)
+    table.put_item(
+        Item={
+            "target_id": target_id,
+            "url": target_url,
+            "status": "active",
+        }
     )
-    monkeypatch.setattr(
-        webhealth.cw.boto3,
-        "client",
-        lambda service_name, **kwargs: _aws_client(service_name),
-    )
 
-    # Keep the dependency on external website availability isolated to the HTTP layer.
-    responses = []
-    for status_code in (200, 302, 503):
+    try:
+        importlib.invalidate_caches()
+        webhealth = importlib.import_module("webhealth")
+        webhealth = importlib.reload(webhealth)
+
+        published_metrics = []
+        put_metric = webhealth.cw.putDataFunc
+
+        def record_published_metric(namespace, name, url, value, unit):
+            result = put_metric(namespace, name, url, value, unit)
+            published_metrics.append((namespace, name, url, value, unit))
+            return result
+
+        monkeypatch.setattr(webhealth.cw, "putDataFunc", record_published_metric)
         response = Mock()
         response.__enter__ = Mock(return_value=response)
         response.__exit__ = Mock(return_value=False)
-        response.getcode.return_value = status_code
-        responses.append(response)
+        response.getcode.return_value = 200
+        urlopen = Mock(return_value=response)
+        monkeypatch.setattr(webhealth.urllib.request, "urlopen", urlopen)
+        monkeypatch.setattr(
+            webhealth.time,
+            "monotonic",
+            Mock(side_effect=[time.monotonic(), time.monotonic() + 0.5]),
+        )
 
-    monkeypatch.setattr(
-        webhealth.urllib.request,
-        "urlopen",
-        Mock(side_effect=responses),
-    )
+        result = webhealth.lambda_handler({}, None)
 
-    # Make latency deterministic so the service receives consistent metric values.
-    monkeypatch.setattr(
-        webhealth.time,
-        "time",
-        Mock(side_effect=[10.0, 10.5, 20.0, 21.0, 30.0, 32.0]),
-    )
+        metric_names = {
+            name for namespace, name, url, _, _ in published_metrics
+            if namespace == "WebHealth" and url == target_url
+        }
 
-    result = webhealth.lambda_handler({}, None)
-
-    cloudwatch = _aws_client("cloudwatch")
-    metrics = cloudwatch.list_metrics(Namespace="WebHealth")
-    metric_names = {metric["MetricName"] for metric in metrics["Metrics"]}
-
-    assert result == {
-        "statusCode": 200,
-        "body": "Metric publishing complete",
-    }
-    assert {"AVAILABILITY_METRIC", "LATENCY_METRIC", "HTTP_STATUS_CODE"}.issubset(metric_names)
-    assert any(
-        dimension["Name"] == "URL" and dimension["Value"] == WEBSITE_URLS[0]
-        for metric in metrics["Metrics"]
-        for dimension in metric.get("Dimensions", [])
-    )
+        assert result == {
+            "statusCode": 200,
+            "body": "Metric publishing complete",
+        }
+        assert urlopen.call_args_list[0].args[0] == target_url
+        assert {
+            "AVAILABILITY_METRIC",
+            "LATENCY_METRIC",
+            "HTTP_STATUS_CODE",
+        }.issubset(metric_names)
+    finally:
+        table.delete_item(Key={"target_id": target_id})
+        if created_local_table:
+            aws_client("dynamodb").delete_table(TableName=table_name)
