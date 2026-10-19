@@ -166,6 +166,10 @@ These stages gate progression through CodePipeline; they do not report a GitHub 
 
 Target-table reads and writes are timed with a monotonic clock and published to CloudWatch in the `CrawlerOperations` namespace. `DynamoDBReadLatency` covers `get_target`, `list_targets`, and `list_crawl_targets`; `DynamoDBWriteLatency` covers `create_target`, `update_target`, and `delete_target`. Each metric has an `Operation` dimension and uses milliseconds. Average read and write latency are graphed on the `WebHealthDashboard`. If publishing a timing metric fails, the error is logged without changing the outcome of the DynamoDB operation.
 
+### Applied Project tests
+
+The Alpha unit-test stage includes five numbered Applied Project unit tests: two verify read/write latency metrics, and three check malformed input, duplicate target IDs, and invalid update status. The Beta functional-test stage includes three numbered API-handler tests covering create/read, update, and delete/not-found behavior against a stateful in-memory table. The Gamma integration-test stage includes one numbered CRUD lifecycle test against a real LocalStack DynamoDB table; it skips when LocalStack is not available and also verifies read/write latency metric emission.
+
 ## Crawler target API behavior
 
 The REST API is internet-accessible and currently has no request authentication. API Gateway throttles the shared `prod` stage at 10 requests per second with a burst limit of 20. These limits help control traffic but do not prevent anonymous use or abuse. CORS allows browser requests from any origin; restrict this to the application’s origin when it is known.
@@ -304,7 +308,7 @@ cdk diff
 cdk deploy
 ```
 
-## Repository Structure (I had A.I write this part because it would be annoying to do by hand)
+## Repository Structure
 
 ```text
 .

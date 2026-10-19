@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-
+# Unit tests for Applied Project
 RESOURCE_DIR = Path(__file__).resolve().parents[2] / "joshua" / "resources"
 
 
@@ -14,6 +14,8 @@ def operational_metrics(monkeypatch):
     return importlib.import_module("operational_metrics")
 
 
+# Applied Project Unit Test 1: verifies elapsed DynamoDB read time is emitted
+# as a CloudWatch metric with the operation name and milliseconds unit.
 def test_dynamodb_operation_publishes_elapsed_read_time(
     monkeypatch, operational_metrics
 ):
@@ -44,6 +46,8 @@ def test_dynamodb_operation_publishes_elapsed_read_time(
     assert metric["Value"] == pytest.approx(25.0)
 
 
+# Applied Project Unit Test 2: verifies elapsed DynamoDB write time is emitted
+# as a CloudWatch metric without changing the operation's return value.
 def test_dynamodb_operation_publishes_elapsed_write_time(
     monkeypatch, operational_metrics
 ):
