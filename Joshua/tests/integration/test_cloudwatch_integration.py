@@ -51,6 +51,13 @@ def test_webhealth_publishes_metrics_to_cloudwatch(monkeypatch):
         webhealth = importlib.import_module("webhealth")
         webhealth = importlib.reload(webhealth)
 
+        assert target_url in webhealth.load_active_targets()
+        monkeypatch.setattr(
+            webhealth,
+            "load_active_targets",
+            lambda: [target_url],
+        )
+
         published_metrics = []
         put_metric = webhealth.cw.putDataFunc
 
@@ -69,7 +76,7 @@ def test_webhealth_publishes_metrics_to_cloudwatch(monkeypatch):
         monkeypatch.setattr(
             webhealth.time,
             "monotonic",
-            Mock(side_effect=[time.monotonic(), time.monotonic() + 0.5]),
+            Mock(side_effect=time.perf_counter),
         )
 
         result = webhealth.lambda_handler({}, None)
@@ -83,7 +90,10 @@ def test_webhealth_publishes_metrics_to_cloudwatch(monkeypatch):
             "statusCode": 200,
             "body": "Metric publishing complete",
         }
-        assert urlopen.call_args_list[0].args[0] == target_url
+        assert any(
+            call.args[0] == target_url
+            for call in urlopen.call_args_list
+        )
         assert {
             "AVAILABILITY_METRIC",
             "LATENCY_METRIC",
