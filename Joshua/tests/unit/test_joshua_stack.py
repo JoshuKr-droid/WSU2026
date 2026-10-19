@@ -1,6 +1,8 @@
 # This file has the unit tests needed for Alpha stage of the pipeline. 
 # The unit tests are run after the synth step in the pipeline
 
+import json
+
 import aws_cdk as core
 import aws_cdk.assertions as assertions
 import pytest
@@ -40,6 +42,24 @@ def test_schedule_runs_every_five_minutes(template):
         },
     )
 
+
+def test_schedule_invokes_live_alias(template):
+    resources = template.to_json()["Resources"]
+    alias_logical_id = next(
+        logical_id
+        for logical_id, resource in resources.items()
+        if resource["Type"] == "AWS::Lambda::Alias"
+        and resource["Properties"]["Name"] == "Live"
+    )
+    rule = next(
+        resource
+        for resource in resources.values()
+        if resource["Type"] == "AWS::Events::Rule"
+    )
+
+    assert alias_logical_id in json.dumps(rule["Properties"]["Targets"])
+
+
 # Test 5: Check that the DynamoDB tables for alarm logging and rollback history are created
 def test_dynamodb_tables_are_created(template):
     template.resource_count_is("AWS::DynamoDB::Table", 3)
@@ -48,9 +68,26 @@ def test_dynamodb_tables_are_created(template):
 def test_sns_notification_topic_is_created(template):
     template.resource_count_is("AWS::SNS::Topic", 1)
 
-# Test 7: Check that all 11 CloudWatch alarms are created (9 website alarms + 2 crawler operational alarms).
-def test_eleven_alarms_are_created(template):
-    template.resource_count_is("AWS::CloudWatch::Alarm", 11)
+# Test 7: Check that all 12 CloudWatch alarms are created (9 website alarms + 3 crawler operational alarms).
+def test_twelve_alarms_are_created(template):
+    template.resource_count_is("AWS::CloudWatch::Alarm", 12)
+
+
+def test_invocation_alarm_detects_ten_minutes_without_invocations(template):
+    template.has_resource_properties(
+        "AWS::CloudWatch::Alarm",
+        {
+            "AlarmDescription": (
+                "Rollback trigger: No crawler invocations in the last 10 minutes."
+            ),
+            "MetricName": "Invocations",
+            "Threshold": 1,
+            "ComparisonOperator": "LessThanThreshold",
+            "EvaluationPeriods": 2,
+            "DatapointsToAlarm": 2,
+            "TreatMissingData": "breaching",
+        },
+    )
 
 # Test 8: Check that the availability alarm triggers below 90%.
 def test_availability_alarm_threshold_is_ninety_percent(template):

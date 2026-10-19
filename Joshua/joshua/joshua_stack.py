@@ -2,12 +2,12 @@
 # I add a bunch of comments to help me understand more
 
 from aws_cdk import (
+    CfnOutput,
     Duration,
     RemovalPolicy,
     Stack,
     aws_cloudwatch as cloudwatch,
     aws_cloudwatch_actions as cloudwatch_actions,
-    aws_codedeploy as codedeploy,
     aws_events as events,
     aws_events_targets as targets,
     aws_iam as iam,
@@ -38,6 +38,7 @@ class JoshuaStack(Stack):
             "WebHealthLambda",
             # Execution environment for the lambda function
             runtime=lambda_.Runtime.PYTHON_3_14,
+            function_name=f"{construct_id.lower()}-webhealth",
             # Finds the lambda_handler function in the webhealth.py file
             handler="webhealth.lambda_handler",
             # Tells that the code for the lambda function is in the joshua/resources directory
@@ -54,6 +55,12 @@ class JoshuaStack(Stack):
             "WebHealthLambdaAlias",
             alias_name="Live",
             version=version,
+        )
+        self.web_health_alias = alias
+        self.web_health_alias_arn_output = CfnOutput(
+            self,
+            "WebHealthAliasArn",
+            value=alias.function_arn,
         )
 
         # Destruction policy for the lambda function. If the stack is deleted, the lambda function will be deleted as well.
@@ -149,7 +156,7 @@ class JoshuaStack(Stack):
         )
 
         # Tells to invoke the lambda function when the rule is triggered
-        rule.add_target(targets.LambdaFunction(fn))
+        rule.add_target(targets.LambdaFunction(alias))
 
         # Destruction policy for the rule. If the stack is deleted, the rule will be deleted as well.
         rule.apply_removal_policy(RemovalPolicy.DESTROY)
@@ -307,18 +314,18 @@ class JoshuaStack(Stack):
         # ==========================================
 
         # 1. Define operational metrics for your web crawler Lambda function
-        crawler_errors_metric = fn.metric_errors(
+        crawler_errors_metric = alias.metric_errors(
             period=Duration.minutes(1),
             statistic="Sum"
         )
         
-        crawler_duration_metric = fn.metric_duration(
+        crawler_duration_metric = alias.metric_duration(
             period=Duration.minutes(1),
             statistic="Average"
         )
 
         # Track how many times the crawler runs
-        crawler_invocations_metric = fn.metric_invocations(
+        crawler_invocations_metric = alias.metric_invocations(
             period=Duration.minutes(5),
             statistic="Sum"
         )
@@ -350,7 +357,21 @@ class JoshuaStack(Stack):
         crawler_duration_alarm.apply_removal_policy(RemovalPolicy.DESTROY)
         crawler_duration_alarm.add_alarm_action(alarm_action)
 
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_codedeploy/LambdaDeploymentGroup.html
+        crawler_invocations_alarm = cloudwatch.Alarm(
+            self,
+            "CrawlerInvocationsAlarm",
+            metric=crawler_invocations_metric,
+            threshold=1,
+            evaluation_periods=2,
+            datapoints_to_alarm=2,
+            comparison_operator=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+            treat_missing_data=cloudwatch.TreatMissingData.BREACHING,
+            alarm_description="Rollback trigger: No crawler invocations in the last 10 minutes.",
+        )
+        crawler_invocations_alarm.apply_removal_policy(RemovalPolicy.DESTROY)
+        crawler_invocations_alarm.add_alarm_action(alarm_action)
+        # ==========================================
+         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_codedeploy/LambdaDeploymentGroup.html
         # 3. Create CodeDeploy Deployment Group tied to these specific crawler alarms
         # deployment_group = codedeploy.LambdaDeploymentGroup(
         #     self,
@@ -359,7 +380,6 @@ class JoshuaStack(Stack):
         #     deployment_config=codedeploy.LambdaDeploymentConfig.CANARY_10_PERCENT_5_MINUTES, # <--- Updated
         #     alarms=[crawler_error_alarm, crawler_duration_alarm],
         # )
-        # ==========================================
 
 
         # CloudWatch dashboard for website health monitoring
@@ -395,6 +415,10 @@ class JoshuaStack(Stack):
                 title="Crawler Operational Health (Invocations & Errors)",
                 left=[crawler_invocations_metric],
                 right=[crawler_errors_metric],
+            ),
+            cloudwatch.GraphWidget(
+                title="Crawler Processing Duration",
+                left=[crawler_duration_metric],
             ),
         )
 

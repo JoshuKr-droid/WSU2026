@@ -5,7 +5,7 @@
 import importlib
 from pathlib import Path
 
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from unittest.mock import Mock
 
 import pytest
@@ -147,7 +147,7 @@ def test_request_latency_is_calculated_and_published(
     # For example, 12.5 - 10.0 = 2.5 seconds.
     monkeypatch.setattr(
         webhealth.time,
-        "time",
+        "monotonic",
         Mock(side_effect=[10.0, 12.5, 20.0, 21.0, 30.0, 30.25]),
     )
 
@@ -185,6 +185,40 @@ def test_http_request_failure_publishes_zero_metrics(
 
     assert metric_values(published_metrics, "HTTP_STATUS_CODE") == [
         (url, 0) for url in WEBSITE_URLS
+    ]
+
+
+def test_http_error_preserves_status_code_and_latency(
+    webhealth, published_metrics, monkeypatch
+):
+    error = HTTPError(WEBSITE_URLS[0], 503, "Service Unavailable", None, None)
+    monkeypatch.setattr(
+        webhealth.urllib.request,
+        "urlopen",
+        Mock(side_effect=[error, response_with_status(200), response_with_status(200)]),
+    )
+    monkeypatch.setattr(
+        webhealth.time,
+        "monotonic",
+        Mock(side_effect=[10.0, 10.5, 20.0, 20.25, 30.0, 30.75]),
+    )
+
+    webhealth.lambda_handler({}, None)
+
+    assert metric_values(published_metrics, "AVAILABILITY_METRIC") == [
+        (WEBSITE_URLS[0], 0),
+        (WEBSITE_URLS[1], 1),
+        (WEBSITE_URLS[2], 1),
+    ]
+    assert metric_values(published_metrics, "HTTP_STATUS_CODE") == [
+        (WEBSITE_URLS[0], 503),
+        (WEBSITE_URLS[1], 200),
+        (WEBSITE_URLS[2], 200),
+    ]
+    assert metric_values(published_metrics, "LATENCY_METRIC") == [
+        (WEBSITE_URLS[0], 0.5),
+        (WEBSITE_URLS[1], 0.25),
+        (WEBSITE_URLS[2], 0.75),
     ]
 
 

@@ -3,6 +3,7 @@ from aws_cdk import (
     pipelines,
     SecretValue,
     aws_codepipeline_actions as codepipeline_actions,
+    aws_iam as iam,
     Stage,
 )
 from constructs import Construct
@@ -85,15 +86,38 @@ class PipelineStack(Stack):
         
         pipeline.add_stage(
             stage=Gamma,
-            post=[pipelines.ShellStep(
-            id="IntegrationTests",
-            commands=[
-                "cd Joshua",
-                "python -m pip install -r requirements.txt",
-                "pip install pytest",
-                "python -m pytest tests/integration",
+            post=[
+                pipelines.ShellStep(
+                    id="IntegrationTests",
+                    commands=[
+                        "cd Joshua",
+                        "python -m pip install -r requirements.txt",
+                        "pip install pytest",
+                        "python -m pytest tests/integration",
+                    ],
+                ),
+                pipelines.CodeBuildStep(
+                    id="CanarySmokeTest",
+                    env_from_cfn_outputs={
+                        "CANARY_ALIAS_ARN": Gamma.application_stack.web_health_alias_arn_output,
+                    },
+                    commands=[
+                        "aws lambda invoke --function-name \"$CANARY_ALIAS_ARN\" "
+                        "--cli-binary-format raw-in-base64-out --payload '{}' "
+                        "canary-response.json > canary-metadata.json",
+                        "python3 -c 'import json, sys; metadata=json.load(open(\"canary-metadata.json\")); response=json.load(open(\"canary-response.json\")); sys.exit(\"Canary invocation failed: \" + json.dumps(metadata) if metadata.get(\"FunctionError\") or response.get(\"statusCode\") != 200 else 0)'",
+                    ],
+                    role_policy_statements=[
+                        iam.PolicyStatement(
+                            actions=["lambda:InvokeFunction"],
+                            resources=[
+                                Gamma.application_stack.web_health_alias.function_arn
+                            ],
+                        )
+                    ],
+                ),
             ],
-        )])
+        )
 
         prod = MyPipelineStage(self, "ProductionStage")
         pipeline.add_stage(

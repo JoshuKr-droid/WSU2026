@@ -11,4 +11,7 @@ class MyPipelineStage(Stage):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        ApplicationStack = JoshuaStack(self, "APP")
+        self.application_stack = JoshuaStack(
+            self,
+            f"{construct_id}APP",
+        )

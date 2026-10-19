@@ -16,33 +16,40 @@ The solution is designed for ongoing monitoring and operational awareness, espec
 
 The infrastructure is defined in the CDK stack in `joshua/joshua_stack.py`. The architecture combines several AWS services:
 
-- EventBridge schedule triggers a Lambda function every 2 minutes
+- EventBridge invokes the `Live` Lambda alias every 5 minutes
 - Lambda checks the configured websites
 - CloudWatch stores custom metrics
 - CloudWatch alarms evaluate metric thresholds
 - SNS publishes notifications when an alarm fires
 - DynamoDB stores alarm records for later review
+- A rollback Lambda moves the `Live` alias to an earlier published version when an operational alarm fires
 - CloudWatch dashboard visualises key website metrics
 
 ```mermaid
 flowchart LR
-    A[EventBridge Rule\nRuns every 2 minutes] --> B[WebHealth Lambda]
-    B --> C[Checks websites]
-    C --> D[CloudWatch Metrics\nWebHealth namespace]
-    D --> E[CloudWatch Alarms]
-    E --> F[SNS Topic]
-    F --> G[Email Notifications]
-    F --> H[Alarm Logger Lambda]
-    H --> I[DynamoDB AlarmLogTable]
-    D --> J[CloudWatch Dashboard]
+    A[EventBridge Rule\nRuns every 5 minutes] --> B[Live Lambda Alias]
+    B --> C[WebHealth Lambda]
+    C --> D[Checks websites]
+    D --> E[CloudWatch Metrics\nWebHealth namespace and Lambda metrics]
+    E --> F[CloudWatch Alarms]
+    F --> G[SNS Topic]
+    G --> H[Email Notifications]
+    G --> I[Alarm Logger Lambda]
+    I --> J[DynamoDB AlarmLogTable]
+    G --> K[Rollback Handler Lambda]
+    K --> L[Update Live Alias]
+    K --> M[DynamoDB RollbackHistoryTable]
+    E --> N[CloudWatch Dashboard]
 ```
 
 ### Main AWS Components
 
 - `WebHealthLambda` monitors websites and writes metrics to CloudWatch
 - `AlarmLoggerLambda` processes SNS alarm notifications and writes them to DynamoDB
-- `LambdaInvocationRule` invokes the monitoring Lambda on a two-minute schedule
+- `LambdaInvocationRule` invokes the `Live` alias on a five-minute schedule
 - `AlarmLogTable` stores alarm metadata and raw notification payloads
+- `RollbackHandlerLambda` reverts `Live` to the previous published version for operational alarms
+- `RollbackHistoryTable` records rollback attempts and outcomes
 - `AlarmNotifications` SNS topic handles email and Lambda-based alarm subscription actions
 - `WebHealthMonitoring` CloudWatch dashboard visualises key metrics
 
@@ -103,13 +110,13 @@ The project uses a custom CloudWatch namespace named `WebHealth`. The metrics us
 
 3. `HTTP_STATUS_CODE`
    - Captures the HTTP status code returned by the site
-   - Unit: `Count`
+   - Unit: `None`
 
 These metrics are stored in CloudWatch and used for dashboards and alarms.
 
 ## CloudWatch Alarms
 
-The stack defines three alarms in `joshua/joshua_stack.py`:
+The stack defines website alarms for each monitored site, plus Lambda operational alarms:
 
 ### Website Availability Alarm
 
@@ -136,6 +143,24 @@ The stack defines three alarms in `joshua/joshua_stack.py`:
 - Purpose: detects 4xx and 5xx errors
 
 Each alarm is connected to the SNS topic, which sends notifications.
+
+### Lambda Operational Alarms
+
+- `CrawlerErrorAlarm` triggers when the aliased Lambda reports an error.
+- `CrawlerDurationAlarm` triggers when average duration exceeds 25 seconds.
+- `CrawlerInvocationsAlarm` triggers after two consecutive five-minute periods with fewer than one invocation, including missing data.
+
+All three operational alarms notify the rollback handler. The handler updates the `Live` alias to the highest published version below its current version and records the result in `RollbackHistoryTable`. This is a custom alias-based rollback; it does not use CodeDeploy.
+
+### Canary and Release Gate
+
+The CodePipeline deploys and tests Alpha, Beta, and Gamma before Production. After Gamma's deployment and integration tests, `CanarySmokeTest` invokes its `Live` alias and fails the pipeline if the Lambda reports an execution error or does not return `statusCode: 200`. Production cannot be promoted through the pipeline unless this check passes; production also has operational alarms that invoke the rollback handler.
+
+This is a synthetic smoke-test gate, not weighted/percentage-based traffic shifting, and it does not wait for CloudWatch alarms to evaluate. The application publishes a new version to the alias when its stack is deployed. The test gates promotion to Production but is not a post-deployment Production check.
+
+These stages gate progression through CodePipeline; they do not report a GitHub required status check or block merging a pull request. Configure GitHub branch protection with an appropriate required check if merges must be blocked.
+
+**Current scope:** despite the operational alarm names, the scheduled Lambda monitors a fixed list of websites. It does not read or crawl the targets stored by the separate CRUD API.
 
 ## SNS Notifications
 
@@ -176,6 +201,8 @@ A dashboard named `WebHealthMonitoring` is created with widgets for:
 - Website Availability
 - Website Latency
 - HTTP Status Codes
+- Lambda invocations and errors
+- Lambda processing duration
 
 This gives a visual overview of the health of the monitored website endpoints in a single AWS dashboard.
 
@@ -287,7 +314,8 @@ cdk deploy
 ## Notes
 
 - The project uses `WebHealth` as the custom CloudWatch namespace.
-- The monitoring rule runs every 2 minutes.
+- The monitoring rule runs every 5 minutes and invokes the `Live` Lambda alias.
+- The HTTP status metric preserves HTTP error response codes (for example, 404 or 503) and measures their request latency.
 - SNS email subscriptions may require confirmation before email alerts are delivered.
 - Ensure your AWS credentials and default region are configured correctly before deployment.
 

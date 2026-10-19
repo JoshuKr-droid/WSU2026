@@ -3,6 +3,7 @@ import constants
 import CWPutData as cw
 import time
 import urllib.request
+from urllib.error import HTTPError, URLError
 
 # Define metrics for a web URL. You will obtain and publish these metrics.
 def lambda_handler(event, context):
@@ -23,9 +24,9 @@ def lambda_handler(event, context):
         availability = 0
         latency = 0
         status_code = 0
+        start_time = time.monotonic()
 
         try:
-            start_time = time.time()
             # Opens the URL and waits for a response. If the response is received within 10 seconds,
             # it will continue to the next line of code. If not, it will raise an exception.
             with urllib.request.urlopen(site_url, timeout=10) as response:
@@ -36,9 +37,13 @@ def lambda_handler(event, context):
                 else:
                     availability = 0
 
-            latency = time.time() - start_time
+            latency = time.monotonic() - start_time
 
-        except Exception:
+        except HTTPError as error:
+            status_code = error.code
+            latency = time.monotonic() - start_time
+            error.close()
+        except (URLError, TimeoutError, OSError):
             # For now, if something goes wrong it will set the metrics to 0.
             availability = 0
             latency = 0
