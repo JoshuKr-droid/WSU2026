@@ -160,7 +160,11 @@ This is a synthetic smoke-test gate, not weighted/percentage-based traffic shift
 
 These stages gate progression through CodePipeline; they do not report a GitHub required status check or block merging a pull request. Configure GitHub branch protection with an appropriate required check if merges must be blocked.
 
-**Current scope:** despite the operational alarm names, the scheduled Lambda monitors a fixed list of websites. It does not read or crawl the targets stored by the separate CRUD API.
+**Crawler integration:** the scheduled `WebHealthLambda` reads all target records from `CrawlerTargetsTable` on each run, follows DynamoDB pagination, and checks only records with `status: "active"`. Create targets with `POST /targets` to add checks; paused targets are ignored. An empty target table results in a successful run with no website requests or per-website metrics.
+
+### DynamoDB latency metrics
+
+Target-table reads and writes are timed with a monotonic clock and published to CloudWatch in the `CrawlerOperations` namespace. `DynamoDBReadLatency` covers `get_target`, `list_targets`, and `list_crawl_targets`; `DynamoDBWriteLatency` covers `create_target`, `update_target`, and `delete_target`. Each metric has an `Operation` dimension and uses milliseconds. Average read and write latency are graphed on the `WebHealthDashboard`. If publishing a timing metric fails, the error is logged without changing the outcome of the DynamoDB operation.
 
 ## Crawler target API behavior
 
@@ -214,6 +218,8 @@ A dashboard named `WebHealthMonitoring` is created with widgets for:
 - HTTP Status Codes
 - Lambda invocations and errors
 - Lambda processing duration
+- Crawler target DynamoDB read latency
+- Crawler target DynamoDB write latency
 
 This gives a visual overview of the health of the monitored website endpoints in a single AWS dashboard.
 

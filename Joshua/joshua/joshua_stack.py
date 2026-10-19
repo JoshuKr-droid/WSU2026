@@ -30,6 +30,20 @@ class JoshuaStack(Stack):
         # In class demonstration
         # Lambda function to check the health of a website
 
+        crawler_targets_table = dynamodb.Table(
+            self,
+            "CrawlerTargetsTable",
+            partition_key=dynamodb.Attribute(
+                name="target_id",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True,
+            ),
+            removal_policy=RemovalPolicy.RETAIN,
+        )
+
         # Creates lambda function and stores construct in variable fn
         fn = lambda_.Function(
             # Tells to put the lambda function in JoshuaStack
@@ -43,9 +57,13 @@ class JoshuaStack(Stack):
             handler="webhealth.lambda_handler",
             # Tells that the code for the lambda function is in the joshua/resources directory
             code=lambda_.Code.from_asset("joshua/resources"),
+            environment={
+                "CRAWLER_TARGETS_TABLE": crawler_targets_table.table_name,
+            },
             # lambda runs for a max of 30 seconds before timing out
             timeout=Duration.seconds(30),
         )
+        crawler_targets_table.grant_read_data(fn)
 
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_lambda/Alias.html
         # Creates an alias for the lambda function. This allows us to have multiple versions of the lambda function and switch between them easily.
@@ -420,6 +438,40 @@ class JoshuaStack(Stack):
                 title="Crawler Processing Duration",
                 left=[crawler_duration_metric],
             ),
+            cloudwatch.GraphWidget(
+                title="Crawler Target DynamoDB Read Latency",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="CrawlerOperations",
+                        metric_name="DynamoDBReadLatency",
+                        dimensions_map={"Operation": operation},
+                        period=Duration.minutes(1),
+                        statistic="Average",
+                    )
+                    for operation in (
+                        "get_target",
+                        "list_targets",
+                        "list_crawl_targets",
+                    )
+                ],
+            ),
+            cloudwatch.GraphWidget(
+                title="Crawler Target DynamoDB Write Latency",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="CrawlerOperations",
+                        metric_name="DynamoDBWriteLatency",
+                        dimensions_map={"Operation": operation},
+                        period=Duration.minutes(1),
+                        statistic="Average",
+                    )
+                    for operation in (
+                        "create_target",
+                        "update_target",
+                        "delete_target",
+                    )
+                ],
+            ),
         )
 
         # I may have missed some info on topics/ alarm action / subscriptions. Though I'm not too sure.
@@ -450,22 +502,7 @@ class JoshuaStack(Stack):
 
 # Manage README files in markdown on GitHub.
 
-# DynamoDB table to store web crawler targets
-        crawler_targets_table = dynamodb.Table(
-            self,
-            "CrawlerTargetsTable",
-            partition_key=dynamodb.Attribute(
-                name="target_id", # partition key for the table
-                type=dynamodb.AttributeType.STRING,
-            ),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
-                point_in_time_recovery_enabled=True,
-            ),
-            removal_policy=RemovalPolicy.RETAIN,
-        )
-
-        # Lambda function for handling CRUD business logic
+# Lambda function for handling CRUD business logic
         crawler_crud_lambda = lambda_.Function(
             self,
             "CrawlerCrudLambda",
@@ -477,6 +514,12 @@ class JoshuaStack(Stack):
 
         # Grant Lambda read/write permissions to DynamoDB
         crawler_targets_table.grant_read_write_data(crawler_crud_lambda)
+        crawler_crud_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cloudwatch:PutMetricData"],
+                resources=["*"],
+            )
+        )
 
         # API Gateway REST API setup
         from aws_cdk import aws_apigateway as apigw

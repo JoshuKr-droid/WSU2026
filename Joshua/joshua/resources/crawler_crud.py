@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 import boto3
 from botocore.exceptions import ClientError
+from operational_metrics import measure_dynamodb_operation
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,11 @@ def _scan_all_targets():
     items = []
     scan_kwargs = {}
     while True:
-        response = table.scan(**scan_kwargs)
+        response = measure_dynamodb_operation(
+            "list_targets",
+            "Read",
+            lambda: table.scan(**scan_kwargs),
+        )
         items.extend(response.get("Items", []))
         last_evaluated_key = response.get("LastEvaluatedKey")
         if not last_evaluated_key:
@@ -98,7 +103,11 @@ def lambda_handler(event, context):
             target_id = path_parameters.get("target_id")
             if target_id is not None:
                 target_id = _validate_target_id(target_id)
-                response = table.get_item(Key={"target_id": target_id})
+                response = measure_dynamodb_operation(
+                    "get_target",
+                    "Read",
+                    lambda: table.get_item(Key={"target_id": target_id}),
+                )
                 item = response.get("Item")
                 if not item:
                     return _response(404, {"error": "Target not found."})
@@ -115,9 +124,13 @@ def lambda_handler(event, context):
                 )
             target_id = _validate_target_id(body.get("target_id"))
             url = _validate_url(body.get("url"))
-            table.put_item(
-                Item={"target_id": target_id, "url": url, "status": "active"},
-                ConditionExpression="attribute_not_exists(target_id)",
+            measure_dynamodb_operation(
+                "create_target",
+                "Write",
+                lambda: table.put_item(
+                    Item={"target_id": target_id, "url": url, "status": "active"},
+                    ConditionExpression="attribute_not_exists(target_id)",
+                ),
             )
             return _response(
                 201,
@@ -164,13 +177,17 @@ def lambda_handler(event, context):
             update_expression = "SET " + ", ".join(
                 f"#{field} = :{field}" for field in updates
             )
-            response = table.update_item(
-                Key={"target_id": target_id},
-                UpdateExpression=update_expression,
-                ConditionExpression="attribute_exists(target_id)",
-                ExpressionAttributeNames=expression_names,
-                ExpressionAttributeValues=expression_values,
-                ReturnValues="ALL_NEW",
+            response = measure_dynamodb_operation(
+                "update_target",
+                "Write",
+                lambda: table.update_item(
+                    Key={"target_id": target_id},
+                    UpdateExpression=update_expression,
+                    ConditionExpression="attribute_exists(target_id)",
+                    ExpressionAttributeNames=expression_names,
+                    ExpressionAttributeValues=expression_values,
+                    ReturnValues="ALL_NEW",
+                ),
             )
             return _response(200, response["Attributes"])
 
@@ -179,10 +196,14 @@ def lambda_handler(event, context):
             if target_id is None:
                 return _response(400, {"error": "target_id is required in the path."})
             target_id = _validate_target_id(target_id)
-            response = table.delete_item(
-                Key={"target_id": target_id},
-                ConditionExpression="attribute_exists(target_id)",
-                ReturnValues="ALL_OLD",
+            response = measure_dynamodb_operation(
+                "delete_target",
+                "Write",
+                lambda: table.delete_item(
+                    Key={"target_id": target_id},
+                    ConditionExpression="attribute_exists(target_id)",
+                    ReturnValues="ALL_OLD",
+                ),
             )
             return _response(200, response["Attributes"])
 

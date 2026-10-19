@@ -26,7 +26,9 @@ WEBSITE_URLS = (
 @pytest.fixture
 def webhealth(monkeypatch):
     monkeypatch.syspath_prepend(str(RESOURCE_DIR))
-    return importlib.import_module("webhealth")
+    module = importlib.import_module("webhealth")
+    monkeypatch.setattr(module, "load_active_targets", lambda: list(WEBSITE_URLS))
+    return module
 
 
 # Stores the metrics that would normally be sent to CloudWatch.

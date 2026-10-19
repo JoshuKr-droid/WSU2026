@@ -1,24 +1,47 @@
+import os
 import boto3
 import constants
 import CWPutData as cw
 import time
 import urllib.request
 from urllib.error import HTTPError, URLError
+from operational_metrics import measure_dynamodb_operation
+
+
+def load_active_targets():
+    table_name = os.environ["CRAWLER_TARGETS_TABLE"]
+    table = boto3.resource("dynamodb").Table(table_name)
+
+    def scan_all_targets():
+        items = []
+        scan_kwargs = {}
+        while True:
+            response = table.scan(**scan_kwargs)
+            items.extend(response.get("Items", []))
+            last_evaluated_key = response.get("LastEvaluatedKey")
+            if not last_evaluated_key:
+                return items
+            scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
+
+    items = measure_dynamodb_operation(
+        "list_crawl_targets",
+        "Read",
+        scan_all_targets,
+    )
+    return [
+        item["url"]
+        for item in items
+        if item.get("status") == "active" and isinstance(item.get("url"), str)
+    ]
 
 # Define metrics for a web URL. You will obtain and publish these metrics.
 def lambda_handler(event, context):
     print(event)
 
-    websites = [
-        'https://www.westernsydney.edu.au/',
-        'https://www.unsw.edu.au/',
-        'https://www.sydney.edu.au/',
-    ]
+    websites = load_active_targets()
 
 # https://docs.aws.amazon.com/boto3/latest/reference/services/cloudwatch/client/list_metrics.html
 # https://docs.aws.amazon.com/boto3/latest/guide/cw-example-metrics.html
-    client = boto3.client('cloudwatch')
-
     # Runs each site in the list and runs the following code to obtain the metrics and publish them to CloudWatch.
     for site_url in websites:
         availability = 0
