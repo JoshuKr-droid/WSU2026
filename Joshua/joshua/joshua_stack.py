@@ -313,7 +313,7 @@ class JoshuaStack(Stack):
         # WEEK 11: Crawler Operational Alarms & Rollback Setup
         # ==========================================
 
-        # 1. Define operational metrics for your web crawler Lambda function
+        #Define operational metrics for your web crawler Lambda function
         crawler_errors_metric = alias.metric_errors(
             period=Duration.minutes(1),
             statistic="Sum"
@@ -330,7 +330,7 @@ class JoshuaStack(Stack):
             statistic="Sum"
         )
 
-        # 2. Create alarms for these metrics
+        # Create alarms for these metrics
         crawler_error_alarm = cloudwatch.Alarm(
             self,
             "CrawlerErrorAlarm",
@@ -372,7 +372,7 @@ class JoshuaStack(Stack):
         crawler_invocations_alarm.add_alarm_action(alarm_action)
         # ==========================================
          # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_codedeploy/LambdaDeploymentGroup.html
-        # 3. Create CodeDeploy Deployment Group tied to these specific crawler alarms
+        # Create CodeDeploy Deployment Group tied to these specific crawler alarms
         # deployment_group = codedeploy.LambdaDeploymentGroup(
         #     self,
         #     "DeploymentGroup",
@@ -459,10 +459,13 @@ class JoshuaStack(Stack):
                 type=dynamodb.AttributeType.STRING,
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            removal_policy=RemovalPolicy.DESTROY,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True,
+            ),
+            removal_policy=RemovalPolicy.RETAIN,
         )
 
-# Lambda function for handling CRUD business logic
+        # Lambda function for handling CRUD business logic
         crawler_crud_lambda = lambda_.Function(
             self,
             "CrawlerCrudLambda",
@@ -482,11 +485,20 @@ class JoshuaStack(Stack):
             self,
             "CrawlerApi",
             rest_api_name="Web Crawler CRUD Service",
-            deploy_options=apigw.StageOptions(stage_name="prod"),
+            deploy_options=apigw.StageOptions(
+                stage_name="prod",
+                throttling_rate_limit=10,
+                throttling_burst_limit=20,
+            ),
         )
 
         # Root resource /targets
         targets_resource = api.root.add_resource("targets")
+        targets_resource.add_cors_preflight(
+            allow_origins=["*"],
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type"],
+        )
         targets_integration = apigw.LambdaIntegration(crawler_crud_lambda)
 
         # Add methods to /targets
@@ -495,6 +507,11 @@ class JoshuaStack(Stack):
 
         # Resource for specific item /targets/{target_id}
         single_target_resource = targets_resource.add_resource("{target_id}")
+        single_target_resource.add_cors_preflight(
+            allow_origins=["*"],
+            allow_methods=["GET", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["Content-Type"],
+        )
         single_target_resource.add_method("GET", targets_integration)    # Read one
         single_target_resource.add_method("PUT", targets_integration)    # Update
         single_target_resource.add_method("DELETE", targets_integration) # Delete

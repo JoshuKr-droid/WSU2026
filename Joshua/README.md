@@ -162,6 +162,17 @@ These stages gate progression through CodePipeline; they do not report a GitHub 
 
 **Current scope:** despite the operational alarm names, the scheduled Lambda monitors a fixed list of websites. It does not read or crawl the targets stored by the separate CRUD API.
 
+## Crawler target API behavior
+
+The REST API is internet-accessible and currently has no request authentication. API Gateway throttles the shared `prod` stage at 10 requests per second with a burst limit of 20. These limits help control traffic but do not prevent anonymous use or abuse. CORS allows browser requests from any origin; restrict this to the application’s origin when it is known.
+
+- `POST /targets` accepts `{"target_id":"site-1","url":"https://example.com"}` and creates the target with status `active`. IDs must be non-empty strings of at most 256 characters; URLs must be HTTP or HTTPS and cannot contain credentials. Reusing an ID returns `409 Conflict`.
+- `GET /targets` returns all targets, following DynamoDB scan pagination internally. `GET /targets/{target_id}` returns one target or `404 Not Found`.
+- `PUT /targets/{target_id}` accepts either or both of `url` and `status`. Valid statuses are `active` and `paused`; unknown fields, invalid status values, and empty updates return `400 Bad Request`. A missing target returns `404 Not Found`.
+- `DELETE /targets/{target_id}` returns the deleted target or `404 Not Found` if it did not exist.
+
+The target table has point-in-time recovery enabled and uses a retain removal policy, so deleting a stack leaves the table and its data in the account. Retained tables may need to be removed manually when no longer required; point-in-time recovery can incur additional AWS charges.
+
 ## SNS Notifications
 
 The project creates an SNS topic named `AlarmNotifications`.

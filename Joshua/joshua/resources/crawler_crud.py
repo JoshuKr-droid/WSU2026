@@ -1,74 +1,201 @@
 import json
+import logging
 import os
+from urllib.parse import urlsplit
+
 import boto3
 from botocore.exceptions import ClientError
 
+
+logger = logging.getLogger(__name__)
 dynamodb = boto3.resource("dynamodb")
-table_name = os.environ.get("CRAWLER_TARGETS_TABLE")
-table = dynamodb.Table(table_name)
+table = dynamodb.Table(os.environ["CRAWLER_TARGETS_TABLE"])
+VALID_STATUSES = {"active", "paused"}
+MAX_TARGET_ID_LENGTH = 256
+
+
+def _response(status_code, payload):
+    return {
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        },
+        "body": json.dumps(payload),
+    }
+
+
+def _parse_body(event):
+    body = event.get("body")
+    if not body:
+        return {}
+    if not isinstance(body, str):
+        raise ValueError("Request body must be a JSON object.")
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as error:
+        raise ValueError("Request body must contain valid JSON.") from error
+
+    if not isinstance(payload, dict):
+        raise ValueError("Request body must be a JSON object.")
+    return payload
+
+
+def _validate_target_id(target_id):
+    if not isinstance(target_id, str) or not target_id.strip():
+        raise ValueError("target_id must be a non-empty string.")
+    target_id = target_id.strip()
+    if len(target_id) > MAX_TARGET_ID_LENGTH:
+        raise ValueError(
+            f"target_id must be no longer than {MAX_TARGET_ID_LENGTH} characters."
+        )
+    return target_id
+
+
+def _validate_url(url):
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError("url must be a non-empty HTTP or HTTPS URL.")
+    url = url.strip()
+    try:
+        parsed_url = urlsplit(url)
+        hostname = parsed_url.hostname
+        _ = parsed_url.port
+    except ValueError as error:
+        raise ValueError("url must be a valid HTTP or HTTPS URL.") from error
+    if (
+        any(character.isspace() for character in url)
+        or parsed_url.scheme.lower() not in {"http", "https"}
+        or not parsed_url.netloc
+        or not hostname
+        or parsed_url.username
+        or parsed_url.password
+    ):
+        raise ValueError("url must be a valid HTTP or HTTPS URL without credentials.")
+    return url
+
+
+def _scan_all_targets():
+    items = []
+    scan_kwargs = {}
+    while True:
+        response = table.scan(**scan_kwargs)
+        items.extend(response.get("Items", []))
+        last_evaluated_key = response.get("LastEvaluatedKey")
+        if not last_evaluated_key:
+            return items
+        scan_kwargs["ExclusiveStartKey"] = last_evaluated_key
+
 
 def lambda_handler(event, context):
     http_method = event.get("httpMethod")
+    if isinstance(http_method, str):
+        http_method = http_method.upper()
     path_parameters = event.get("pathParameters") or {}
-    body = json.loads(event.get("body") or "{}") if event.get("body") else {}
 
     try:
         if http_method == "GET":
-            if "target_id" in path_parameters:
-                # Read single target
-                response = table.get_item(Key={"target_id": path_parameters["target_id"]})
+            target_id = path_parameters.get("target_id")
+            if target_id is not None:
+                target_id = _validate_target_id(target_id)
+                response = table.get_item(Key={"target_id": target_id})
                 item = response.get("Item")
                 if not item:
-                    return {"statusCode": 404, "body": json.dumps({"error": "Target not found"})}
-                return {"statusCode": 200, "body": json.dumps(item)}
-            else:
-                # Read all targets
-                response = table.scan()
-                return {"statusCode": 200, "body": json.dumps(response.get("Items", []))}
+                    return _response(404, {"error": "Target not found."})
+                return _response(200, item)
+            return _response(200, _scan_all_targets())
 
-        elif http_method == "POST":
-            # Create target
-            target_id = body.get("target_id")
-            url = body.get("url")
-            if not target_id or not url:
-                return {"statusCode": 400, "body": json.dumps({"error": "target_id and url are required"})}
-            
+        if http_method == "POST":
+            body = _parse_body(event)
+            unexpected_fields = set(body) - {"target_id", "url"}
+            if unexpected_fields:
+                return _response(
+                    400,
+                    {"error": "Only target_id and url are allowed when creating a target."},
+                )
+            target_id = _validate_target_id(body.get("target_id"))
+            url = _validate_url(body.get("url"))
             table.put_item(
-                Item={
+                Item={"target_id": target_id, "url": url, "status": "active"},
+                ConditionExpression="attribute_not_exists(target_id)",
+            )
+            return _response(
+                201,
+                {
                     "target_id": target_id,
                     "url": url,
                     "status": "active",
                 },
-                ConditionExpression="attribute_not_exists(target_id)",
             )
-            return {"statusCode": 201, "body": json.dumps({"message": "Target created successfully", "target_id": target_id})}
 
-        elif http_method == "PUT":
-            # Update target
+        if http_method == "PUT":
             target_id = path_parameters.get("target_id")
-            status = body.get("status")
-            if not target_id:
-                return {"statusCode": 400, "body": json.dumps({"error": "target_id is required"})}
+            if target_id is None:
+                return _response(400, {"error": "target_id is required in the path."})
+            target_id = _validate_target_id(target_id)
 
-            table.update_item(
+            body = _parse_body(event)
+            unexpected_fields = set(body) - {"url", "status"}
+            if unexpected_fields:
+                return _response(
+                    400,
+                    {"error": "Only url and status can be updated."},
+                )
+            if not body:
+                return _response(
+                    400,
+                    {"error": "Provide at least one field to update: url or status."},
+                )
+
+            updates = {}
+            if "url" in body:
+                updates["url"] = _validate_url(body["url"])
+            if "status" in body:
+                status = body["status"]
+                if not isinstance(status, str) or status not in VALID_STATUSES:
+                    return _response(
+                        400,
+                        {"error": "status must be either 'active' or 'paused'."},
+                    )
+                updates["status"] = status
+
+            expression_names = {f"#{field}": field for field in updates}
+            expression_values = {f":{field}": value for field, value in updates.items()}
+            update_expression = "SET " + ", ".join(
+                f"#{field} = :{field}" for field in updates
+            )
+            response = table.update_item(
                 Key={"target_id": target_id},
-                UpdateExpression="SET #s = :status",
+                UpdateExpression=update_expression,
                 ConditionExpression="attribute_exists(target_id)",
-                ExpressionAttributeNames={"#s": "status"},
-                ExpressionAttributeValues={":status": status},
+                ExpressionAttributeNames=expression_names,
+                ExpressionAttributeValues=expression_values,
+                ReturnValues="ALL_NEW",
             )
-            return {"statusCode": 200, "body": json.dumps({"message": "Target updated successfully"})}
+            return _response(200, response["Attributes"])
 
-        elif http_method == "DELETE":
-            # Delete target
+        if http_method == "DELETE":
             target_id = path_parameters.get("target_id")
-            if not target_id:
-                return {"statusCode": 400, "body": json.dumps({"error": "target_id is required"})}
+            if target_id is None:
+                return _response(400, {"error": "target_id is required in the path."})
+            target_id = _validate_target_id(target_id)
+            response = table.delete_item(
+                Key={"target_id": target_id},
+                ConditionExpression="attribute_exists(target_id)",
+                ReturnValues="ALL_OLD",
+            )
+            return _response(200, response["Attributes"])
 
-            table.delete_item(Key={"target_id": target_id})
-            return {"statusCode": 200, "body": json.dumps({"message": "Target deleted successfully"})}
+        return _response(405, {"error": "Method not allowed."})
 
-        return {"statusCode": 405, "body": json.dumps({"error": "Method not allowed"})}
-
-    except ClientError as e:
-        return {"statusCode": 500, "body": json.dumps({"error": e.response["Error"]["Message"]})}
+    except ValueError as error:
+        return _response(400, {"error": str(error)})
+    except ClientError as error:
+        error_code = error.response.get("Error", {}).get("Code")
+        if error_code == "ConditionalCheckFailedException":
+            if http_method == "POST":
+                return _response(409, {"error": "A target with this target_id already exists."})
+            if http_method in {"PUT", "DELETE"}:
+                return _response(404, {"error": "Target not found."})
+        logger.exception("DynamoDB request failed while handling %s.", http_method)
+        return _response(500, {"error": "The target operation could not be completed."})
