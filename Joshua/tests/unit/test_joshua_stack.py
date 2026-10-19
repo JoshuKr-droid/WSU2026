@@ -29,6 +29,18 @@ def test_web_health_lambda_handler(template):
         },
     )
 
+
+# Lambda creates its log group at runtime; CloudFormation must not recreate it.
+def test_lambda_log_groups_are_not_managed_by_cloudformation():
+    app = core.App(
+        context={"@aws-cdk/aws-lambda:useCdkManagedLogGroup": False}
+    )
+    stack = JoshuaStack(app, "joshua")
+    template = assertions.Template.from_stack(stack)
+
+    template.resource_count_is("AWS::Logs::LogGroup", 0)
+
+
 # Infrastructure Unit Test 3: a scheduled EventBridge rule is synthesized.
 def test_eventbridge_schedule_is_created(template):
     template.resource_count_is("AWS::Events::Rule", 1)
